@@ -56,8 +56,8 @@ Sao chép mục này cho từng thành viên. Mỗi thành viên tự viết và
 
 ### Nguyễn Văn Giáp — 2A202602903
 
-- Phần việc và file/commit/PR: Xây dựng bộ 10 test case nhóm (eval_group.json), nghiên cứu và triển khai 01 chức năng mở rộng Bonus Feature, kiểm thử chỉ số metric.
-- Quyết định, khó khăn và cách xử lý:
-- Điều đã học:
-- AI/công cụ đã dùng và cách kiểm tra:
-- Thời điểm đã tự nộp URL repo chung trên VLearn:
+- Phần việc và file/commit/PR: Xây dựng bộ 10 test case nhóm (eval_group.json), nghiên cứu và triển khai 01 chức năng network_diagnostic - kèm thêm bộ dữ liệu kiểm thử (eval_network_diagnostic.json), kiểm thử chỉ số metric.
+- Quyết định, khó khăn và cách xử lý: Gặp khó khăn khi viết tool và tạo bộ dữ liệu để kiểm thử tool vừa tạo, xử lý bằng cách sử dụng AI generate ra template mẫu -> dựa vào đó chỉnh sửa để cover hết các edge case.
+- Điều đã học: Hiểu về Prompt Engineering có tác động như thế nào tới việc model xử lý thông tin và gọi tool - chỉ cần thay đổi 1 đoạn prompt cũng có thể ngăn chặn cơ số các prompt injection.
+- AI/công cụ đã dùng và cách kiểm tra: Antigravity 
+- Thời điểm đã tự nộp URL repo chung trên VLearn: 15/09/2026
