@@ -1,6 +1,7 @@
 # Kiểm chứng UI & Live Chat — Trần Vũ Gia Huy, 2A202602705
 
 Thực hiện ngày **16/09/2026**, sau merge `ef95955`, trên nhánh `huy/chat-ui-trace`.
+Commit kỹ thuật và evidence: **`2aec95e`**.
 Đây là bổ sung sau mốc 23:59 mặc định; không sửa lịch sử hoặc ngày commit.
 Phạm vi: UI/CLI, tool trace, transcript, A4/B4 và INDIVIDUAL. Không chạy lại bộ eval
 và không nhận công việc prompt/safety/bonus của các thành viên khác.
@@ -85,7 +86,7 @@ Không sửa prompt nhóm hoặc tự parse `action`/`TOOL_CALLS_JSON` để t�
   chỉ mô tả hành động bằng JSON. Các transcript trên là failure evidence để đối chiếu.
 - Chưa có browser khả dụng để kiểm chứng hình ảnh, contrast thực tế và download file trên trình duyệt.
 - Không sửa transcript cũ, eval, số liệu nhóm, nội dung B4a/B5/B6 hay dữ liệu giả lập.
-- Rà tài liệu source chính không thấy MSSV sai `2A20262075`; tên đầy đủ và mã đúng
+- Đã rà MSSV của Huy trong tài liệu source chính; tên đầy đủ và mã đúng
   `2A202602705` được ghi trong TEAM và phân công. Không rà/sửa bản repo lồng ngoài phạm vi.
 - Stash README chỉ chứa phần hướng dẫn; nội dung phù hợp đã ghép vào README hiện tại,
   sửa lại cú pháp `--ui`, bỏ hướng dẫn `--cli` và đường dẫn source gốc gây nhầm lẫn.

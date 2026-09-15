@@ -16,7 +16,7 @@
 |---|---|---|---|---|
 | Ngô Thế Việt | 2A202602594 | TheViet298 | Leader & Prompt Engineering Lead: Quản lý repo, tinh chỉnh `system_prompt.md` & `tools.yaml` (v0-v3), chạy eval, ghi `version_log.csv`, tổng hợp `REPORT.md`. | Commit dff0b50 (Prompt v1 & version_log) |
 | Nguyễn Quang Đạo | 2A202602394 | https://github.com/nguyenquangdao2004-glitch | Tool Registry & Safety/Adversarial Lead: Xây dựng tool schemas trong `tools/`, kiểm thử 12 case an toàn/adversarial, phân tích ranh giới an toàn & confirmation guardrails. | Commit 5e9d842 |
-| Trần Vũ Gia Huy | 2A202602705 | https://github.com/jerrygiahuy | UI & Live Chat Trace Developer: Phụ trách `chat.py`/UI hiển thị tool call/input/kết quả/phiên bản, thực thi và xuất `transcripts/` minh chứng. | Commit d74a889 (tool trace và transcript); fdc0624 (INDIVIDUAL và MSSV) |
+| Trần Vũ Gia Huy | 2A202602705 | https://github.com/jerrygiahuy | UI & Live Chat Trace Developer: Phụ trách `chat.py`/UI hiển thị tool call/input/kết quả/phiên bản, thực thi và xuất `transcripts/` minh chứng. | Commit d74a889 (trace); 371caf7 (Demo UI); 2aec95e (UI/CLI Live, test và evidence); fdc0624 (MSSV) |
 | Nguyễn Văn Giáp | 2A202602903 | https://github.com/Giappp | Eval Benchmark & Bonus Lead: Soạn 10 case nhóm (`eval_group.json`), nghiên cứu & phát triển chức năng mở rộng Bonus Feature (`network_diagnostic`), đánh giá metric. | Commit be1079b |
 
 ## Nhận xét chung
@@ -55,17 +55,14 @@ Sao chép mục này cho từng thành viên. Mỗi thành viên tự viết và
   - Kiểm chứng 100% bằng việc chạy eval thực tế qua script `run_eval.py` và kiểm tra filesystem (`tickets/`).
 - Thời điểm đã tự nộp URL repo chung trên VLearn:
 
-### Gia Huy — 2A202602705
+### Trần Vũ Gia Huy — 2A202602705
 
-- Phần việc và file/commit/PR: Cải thiện `starter_v0/chat.py` để hiển thị tên tool, arguments bằng tiếng Việt và kết quả/lỗi; lưu transcript chạy thật trong `starter_v0/transcripts/`. Đã commit phần trace và transcript tại `d74a889`. Xây dựng khung UI Streamlit và gộp vào `chat.py`, có lịch sử chat, chi tiết tool và tải transcript demo; phần UI chưa kết nối logic AI của nhóm.
-
-- Quyết định, khó khăn và cách xử lý: Gặp lỗi cấu hình API key, lỗi kết nối và giới hạn quota 429 của Gemini. Kiểm tra lại `.env`, lưu log lỗi và dùng chế độ Demo để tiếp tục làm UI. Khi AI trả lời bằng văn bản mô phỏng gọi tool, điều chỉnh cách ghi lịch sử tool trong `chat.py`; phiên chạy sau đã gọi tool thật. Sửa vị trí file để chạy đúng trong `starter_v0`.
-
-- Điều đã học: Phân biệt lời gọi tool thật với văn bản mô tả gọi tool; hiểu vai trò của arguments, kết quả tool và lịch sử hội thoại. Biết xây dựng UI Streamlit, kiểm tra transcript và làm việc trên nhánh Git riêng.
-
-- AI/công cụ đã dùng và cách kiểm tra: Dùng ChatGPT hỗ trợ phân tích lỗi, viết và gộp code; VS Code, Terminal, Git và Streamlit để triển khai. Kiểm tra cú pháp bằng `python -m py_compile`, xem git diff, chạy chat Gemini và đối chiếu log. Đã quan sát tool `clarify` chạy thật và AI nhắc đúng vấn đề đăng nhập; lượt kết thúc trong cùng phiên bị lỗi 429 nên chưa xác nhận hoàn tất toàn bộ kịch bản.
-
-- Thời điểm đã tự nộp URL repo chung trên VLearn: [Điền ngày, giờ sau khi thực sự nộp]
+- **Vai trò:** UI & Live Chat Trace Developer.
+- **Phần việc và file/commit/PR:** Giữ UI và CLI trong `starter_v0/chat.py`; nối chế độ Live với provider/tool registry đã merge, giữ Demo độc lập có nhãn rõ. Hiển thị provider/model/hash artifact, lịch sử riêng từng cấu hình, tool arguments/kết quả/lỗi, phản hồi JSON dễ đọc và transcript gốc. Bổ sung checkpoint trace, chống chạy lại cùng request/ghi ticket lặp, test offline và tài liệu A4/B4. Commit: `d74a889` (trace trước đây), `371caf7` (Demo), `ef95955` (merge nhóm), **`2aec95e`** (UI/CLI Live + tests + evidence). Không tạo PR hoặc push trong lượt hoàn thiện này.
+- **Quyết định, khó khăn và cách xử lý:** Source chính ở `starter_v0`, không dùng bản `chat.py` gốc hoặc repo lồng. CSS cũ làm chữ nhạt trên nền trắng; khai báo cả màu chữ/nền cho widget. Model có thể lỗi sau khi tool đã chạy nên lưu trace ngay và không tự chạy lại lượt. Hash artifact hiện tại không khớp version log v3 nên UI hiển thị `current` kèm hash thật. Live Gemini kết nối được nhưng trả JSON mô tả hành động thay cho native tool call; có phản hồi nói đã tạo ticket dù không chạy tool. Giữ nguyên failure evidence, cảnh báo trên UI, không parse văn bản thành hành động. Lỗi DNS sandbox được lưu riêng; chưa có browser khả dụng để kiểm chứng ảnh.
+- **Điều đã học:** Phân biệt lời AI nói với kết quả tool thật; phân biệt `answered` với hoàn thành tác vụ. Hiểu vòng đời rerun của Streamlit, cách cô lập trạng thái phiên và giữ nguyên phản hồi gốc/trace khi lỗi. Dùng hash artifact để đối chiếu phiên bản thay vì chỉ đổi nhãn. Biết tách mock/Demo khỏi evidence Live.
+- **AI/công cụ đã dùng và cách kiểm chứng:** ChatGPT/Codex hỗ trợ đọc code, sửa UI/loop, viết test và đối chiếu tài liệu; Python, Streamlit AppTest, Git và Terminal dùng để kiểm tra. Đã chạy kiểm tra cú pháp, CLI, cài/check dependency, **15 test offline/mock PASS**, server Streamlit health `ok`, và 9 lượt nhận phản hồi Gemini thật. Model nhớ đúng LT-204; **chưa xác minh tra cứu/tạo ticket thành công bằng tool Live**. Test mock xác nhận/ghi ticket chạy trong thư mục tạm, không coi là Live hoặc kết quả safety của nhóm. Xem [bản kiểm chứng](starter_v0/analysis/huy_ui_verification.md), [log test](starter_v0/analysis/huy_offline_tests.txt), [index Live](starter_v0/analysis/huy_live_smoke_index.json). Không sửa số liệu prompt/eval/safety/bonus của người khác hoặc transcript cũ.
+- **Thời điểm đã tự nộp URL repo chung trên VLearn:** Chưa có bằng chứng đã nộp; không điền ngày giờ. Phần bổ sung này thực hiện ngày 16/09/2026 bằng commit mới, không sửa lịch sử.
 
 ### Nguyễn Văn Giáp — 2A202602903
 

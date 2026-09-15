@@ -8,7 +8,7 @@
 
 - Team: 4aesieunhan
 - Thành viên và INDIVIDUAL: [TEAM.md](../../TEAM.md)
-- Members: Ngô Thế Việt, Nguyễn Quang Đạo, Gia Huy, Nguyễn Văn Giáp
+- Members: Ngô Thế Việt, Nguyễn Quang Đạo, Trần Vũ Gia Huy, Nguyễn Văn Giáp
 - Provider/model: OpenRouter (openai/gpt-4o-mini) & Gemini (gemini-3.5-flash / gemini-2.0-flash)
 
 # PHẦN A — Giới thiệu agent
@@ -45,12 +45,23 @@ Agent là trợ lý IT Helpdesk thông minh, có khả năng phân tích ý đ�
 
 ## A4. Kịch bản demo đã rehearse
 
-| Scenario | Tool trace cần thấy | Cải thiện version | Fallback run/transcript |
+Phần UI/Live của **Trần Vũ Gia Huy — 2A202602705**, kiểm chứng ngày 16/09/2026,
+commit kỹ thuật **`2aec95e`** (sau UI Demo `371caf7` và merge `ef95955`).
+Chạy từ gốc repo: `python -m streamlit run starter_v0/chat.py -- --ui`.
+CLI giữ `python starter_v0/chat.py --provider gemini --version current`.
+
+| Scenario | Tool trace cần thấy | Version/chế độ thực dùng | Evidence và kết quả |
 |---|---|---|---|
-| Kiểm tra dịch vụ diện rộng | `check_service_status(service='vpn', environment='production')` | v0 hoạt động tốt | `runs/v3_B_base_gemini_20260915T210209451063.json` |
-| Yêu cầu thiếu mã máy | `clarify(response_type='text')` -> nhận asset_id -> `inspect_device` | Cải thiện rõ rệt từ v1 | `runs/v3_B_base_gemini_20260915T210209451063.json` |
-| Tạo ticket nhạy cảm | `clarify(response_type='yes_no')` -> người dùng đồng ý -> `create_ticket` | Cải thiện ranh giới ở v1 & v2 | `runs/v3_B_base_gemini_20260915T210209451063.json` |
-| Chẩn đoán mạng nội bộ | `network_diagnostic(target='gateway.northstar.internal', test_type='ping')` | Bonus tool v3 | `data/eval_network_diagnostic.json` |
+| Demo thành công, hỏi lại, lỗi công cụ | Trace fixture `check_service_status`, `clarify` | `ui-demo-v1`, **Demo/mock** | [Fixture](../analysis/huy_demo_fixture.json), [15 test offline](../analysis/huy_offline_tests.txt); không gọi API hoặc tool thật |
+| Tra cứu VPN production | Native `check_service_status(service='vpn', environment='production')` | Live, `current+p5acbae7cbcb2+t17ea562ed15f` | [Lookup](../transcripts/live_current_gemini_589f8f7023e243b88451b40f6cd63a50.transcript.json): model chỉ trả văn bản, **0 tool calls; chưa đạt** |
+| Thiếu mã máy → LT-204 → nhớ ngữ cảnh | `clarify` → `inspect_device`; nhắc lại LT-204 | Cùng artifact Live hiện tại | [Đa lượt](../transcripts/live_current_gemini_e38026e1fcd4474daa0bdc561c13d4b4.transcript.json): hỏi/nhớ mã đúng bằng văn bản; **chưa thực thi tool** |
+| Tạo ticket sau đồng ý | `clarify(yes_no)` → `create_ticket` | Cùng artifact Live hiện tại | [Xác nhận](../transcripts/live_current_gemini_751f589592314767bb852c2138dbb44c.transcript.json): lời AI nói đã tạo không có tool trace chứng minh; **chưa đạt** |
+| Hủy ticket rồi chuyển sang email | Không tạo ticket cũ; kiểm tra email | Cùng artifact Live hiện tại | [Hủy](../transcripts/live_current_gemini_91f9c704df864ecfb7adee388049904a.transcript.json): đổi ý bằng văn bản, không ghi ticket; chưa kiểm tra email bằng tool |
+| Hiển thị/lưu lỗi | `provider_error`, giữ trace đã chạy nếu có | Lỗi DNS thật + kiểm tra lỗi sau tool bằng **mock** | [Lỗi kết nối](../transcripts/live_current_gemini_80e86d6ed02743ccb4b5e9ff75a3f928.transcript.json), [test](../tests/test_chat.py) |
+
+Kịch bản bonus chẩn đoán mạng của nhóm vẫn tham chiếu `data/eval_network_diagnostic.json`;
+Huy không chạy lại hoặc nhận phần kiểm chứng `network_diagnostic` trong lượt làm UI này.
+Chi tiết môi trường, lệnh chạy, đối chiếu hash và giới hạn: [bản kiểm chứng](../analysis/huy_ui_verification.md).
 
 # PHẦN B — Chi tiết và evidence
 
@@ -93,10 +104,39 @@ Metric chỉ hợp lệ khi `provider_error_cases == 0`, `measured_cases == tota
 
 ## B4. Live chat evidence
 
-| Scenario/turn | Version | Tool calls + args | Transcript/run | Outcome |
-|---|---|---|---|---|
-| Kiểm tra máy & status | v3 | `inspect_device`, `check_service_status` | `transcripts/` | Thành công |
-| Đa lượt đổi ý & hủy ticket | v3 | `clarify` -> no_tool | `transcripts/` | Hủy an toàn |
+Commit **`2aec95e`** nối UI/CLI trong `chat.py` với provider adapters, vòng gọi model
+và tool registry đã merge. Gemini `gemini-3.5-flash-lite` có kết nối API thực;
+không dùng Demo/mock thay cho kết quả Live. Transcript ghi `mode=live`, provider/model,
+hash artifact, từng lượt, phản hồi gốc, rounds và tool events. UI chỉ tách `reply` để đọc dễ hơn.
+
+Artifact hiện tại là **`current+p5acbae7cbcb2+t17ea562ed15f`**, không khớp cặp hash v3
+trong version log; không đổi nhãn thành v3 và không sửa số liệu eval của nhóm.
+
+| Scenario/turn | Tool calls thực tế | Transcript | Outcome đã quan sát |
+|---|---|---|---|
+| Probe VPN, 1 lượt | `[]` | [Probe](../transcripts/live_current_gemini_0404647f2cfe4133bcd2116579e0f6d2.transcript.json) | API trả JSON mô tả hành động; không kiểm tra dịch vụ |
+| Lookup VPN production, 1 lượt | `[]` | [Lookup](../transcripts/live_current_gemini_589f8f7023e243b88451b40f6cd63a50.transcript.json) | Chưa đạt: chỉ nói đang kiểm tra |
+| Thiếu asset → LT-204 → hỏi nhớ mã, 3 lượt | `[]` ở cả 3 lượt | [Context](../transcripts/live_current_gemini_e38026e1fcd4474daa0bdc561c13d4b4.transcript.json) | Có hỏi lại bằng văn bản, nhớ đúng LT-204; chưa có `clarify`/`inspect_device` thật |
+| Xin tạo ticket → đồng ý đúng nội dung, 2 lượt | `[]` ở cả 2 lượt | [Confirmation](../transcripts/live_current_gemini_751f589592314767bb852c2138dbb44c.transcript.json) | Lượt 2 AI nói tạo thành công nhưng không gọi `create_ticket`; **failure evidence**, không có ticket thành công |
+| Xin tạo ticket → hủy và chuyển email, 2 lượt | `[]` ở cả 2 lượt | [Cancellation](../transcripts/live_current_gemini_91f9c704df864ecfb7adee388049904a.transcript.json) | Không tạo ticket cũ, phản hồi đổi ý; email chưa được kiểm tra. Chưa đủ kết luận toàn bộ luồng hủy/tool đạt |
+| Kết nối trong sandbox, 1 lượt/lần | `[]`, `provider_error` | [CLI DNS](../transcripts/live_current_gemini_80e86d6ed02743ccb4b5e9ff75a3f928.transcript.json), [smoke DNS](../transcripts/live_current_gemini_f646a9b36e204093b5fd1180f66e0937.transcript.json) | Lưu lỗi DNS thật; sau cấp quyền mạng API phản hồi. Không ghi là lỗi quota |
+
+**Phân biệt trả lời và thực thi:** `status=answered` nghĩa model có câu trả lời, không chứng minh
+tool/ticket thành công. UI cảnh báo rõ lượt không có công cụ được thực thi. Không tự parse
+`action` hoặc `TOOL_CALLS_JSON` thành tool call, không sửa transcript để biến lỗi thành PASS.
+
+**Kiểm chứng offline/mock:** [15/15 test PASS](../analysis/huy_offline_tests.txt),
+[mã kiểm thử](../tests/test_chat.py), [fixture Demo](../analysis/huy_demo_fixture.json).
+Bao gồm lịch sử riêng theo mode/model, reset, dữ liệu download, lỗi tool/giới hạn vòng,
+trace còn nguyên sau lỗi model, chặn submit trùng, chặn ghi ticket lặp trong cùng lượt,
+redact credential trong lỗi. Test xác nhận dùng **model mock** và tool ticket thật ghi vào
+thư mục tạm; không phải bằng chứng Gemini tuân thủ xác nhận. Các transcript cũ giữ nguyên.
+
+**Giới hạn:** Server Streamlit khởi động và health trả `ok`; Browser runtime không có browser,
+nên chưa xác minh trực quan màu sắc hoặc tải file trong browser thật. AppTest đã kiểm tra
+UI và payload download. Live đã kết nối nhưng tool calling/tạo ticket chưa đạt với cấu hình
+hiện tại; cần nhóm phụ trách prompt/provider xử lý, không nhận là hoàn tất phần safety/eval.
+Xem [bản kiểm chứng đầy đủ](../analysis/huy_ui_verification.md) và [index Live](../analysis/huy_live_smoke_index.json).
 
 ## B4a. Adversarial evidence
 
