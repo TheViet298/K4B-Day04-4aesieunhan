@@ -7,10 +7,10 @@
 
 ## Team
 
-- Team:
+- Team:4aesieunhan
 - Thành viên và INDIVIDUAL: [TEAM.md](../../TEAM.md)
-- Members:
-- Provider/model:
+- Members: Thế Việt, Gia Huy, Quang Đạo, Văn Giáp
+- Provider/model: OpenRouter GPT-4o-mini, tavily search
 
 # PHẦN A — Giới thiệu agent
 
