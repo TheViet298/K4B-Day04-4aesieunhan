@@ -6,10 +6,17 @@
 
 ## Team
 
+<<<<<<< HEAD
 - Team: 4aesieunhan
 - Thành viên và INDIVIDUAL: [TEAM.md](../../TEAM.md)
 - Members: Ngô Thế Việt, Nguyễn Quang Đạo, Gia Huy, Nguyễn Văn Giáp
 - Provider/model: Gemini (`gemini-3.5-flash-lite`)
+=======
+- Team:4aesieunhan
+- Thành viên và INDIVIDUAL: [TEAM.md](../../TEAM.md)
+- Members: Thế Việt, Gia Huy, Quang Đạo, Văn Giáp
+- Provider/model: OpenRouter GPT-4o-mini, tavily search
+>>>>>>> e725c803d250be4257cf78945378312f2eb74f4e
 
 # PHẦN A — Giới thiệu agent
 
