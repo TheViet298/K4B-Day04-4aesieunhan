@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from typing import Any
 
 from providers.base import ModelResponse, ToolCall
@@ -106,11 +107,30 @@ class GeminiProvider:
             config_kwargs["tools"] = [types.Tool(function_declarations=declarations)]
 
         client = genai.Client(api_key=api_key)
-        resp = client.models.generate_content(
-            model=model or self.default_model,
-            contents=contents,
-            config=types.GenerateContentConfig(**config_kwargs),
-        )
+        target_model = model or os.getenv("GEMINI_MODEL") or self.default_model
+
+        max_retries = 5
+        base_delay = 2.0
+        resp = None
+
+        for attempt in range(max_retries):
+            try:
+                # Delay nhỏ trước mỗi request để tránh spam rate limit
+                time.sleep(1.5)
+                resp = client.models.generate_content(
+                    model=target_model,
+                    contents=contents,
+                    config=types.GenerateContentConfig(**config_kwargs),
+                )
+                break
+            except Exception as exc:
+                err_str = str(exc)
+                if ("429" in err_str or "RESOURCE_EXHAUSTED" in err_str or "quota" in err_str.lower()) and attempt < max_retries - 1:
+                    wait_time = base_delay * (2 ** attempt) + 1.0
+                    print(f"\n[GeminiProvider] Rate limit (429) hit on attempt {attempt+1}/{max_retries}. Sleeping {wait_time:.1f}s before retry...", flush=True)
+                    time.sleep(wait_time)
+                else:
+                    raise exc
 
         text_parts: list[str] = []
         calls: list[ToolCall] = []
