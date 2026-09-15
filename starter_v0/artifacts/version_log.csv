@@ -1,1 +1,6 @@
 version,author,changed_artifact,artifact_version,prompt_hash,tools_hash,reason,hypothesis,metric_name,metric_before,metric_after,run_file
+v0,team,baseline,v0+p27467914bc4d+td4848549884e,27467914bc4d,d4848549884e,baseline,Đo hành vi chưa tối ưu trước khi sửa,case_accuracy,,0.7333,runs/v0_B_base_gemini_20260915T203419514876.json
+v1,QuangDao,tools.yaml,v1+p27467914bc4d+tbcc93152a2c0,27467914bc4d,bcc93152a2c0,Cải thiện mô tả clarify và ranh giới create_ticket,Làm rõ mô tả clarify giúp sửa lỗi missing_info (H10 M01 H19) và chặn tạo ticket khi chưa xác nhận (H12),case_accuracy,0.7333,0.7333,runs/v1_B_base_gemini_20260915T204016220546.json
+v2,team,system_prompt.md,v2+pc981bdc3a93e+tbcc93152a2c0,c981bdc3a93e,bcc93152a2c0,Tối ưu quy tắc định tuyến đa lượt và gọi song song,Bổ sung quy tắc hủy ý định cũ và gọi tool song song giúp đạt độ chính xác tuyệt đối 30/30,case_accuracy,0.7333,1.0000,runs/v2_B_base_gemini_20260915T204319111299.json
+v3,QuangDao & team,system_prompt.md,v3+p787c0ed78956+tbcc93152a2c0,787c0ed78956,bcc93152a2c0,Bổ sung ranh giới an toàn và chống tấn công prompt injection,Thêm Security Guardrails chặn Argument Smuggling và bảo vệ Credential đạt 30/30 base và 12/12 adversarial,case_accuracy,1.0000,1.0000,runs/v3_B_base_gemini_20260915T210209451063.json
+

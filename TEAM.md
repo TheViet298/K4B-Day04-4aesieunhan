@@ -40,10 +40,19 @@ Sao chép mục này cho từng thành viên. Mỗi thành viên tự viết và
 
 ### Nguyễn Quang Đạo — *(Điền MSSV)*
 
-- Phần việc và file/commit/PR: Khai báo tool schemas trong tools.yaml và tools/, thực hiện kiểm thử 12 case adversarial/safety, phân tích lỗi an toàn và cơ chế xác nhận.
+- Phần việc và file/commit/PR:
+  - Khai báo và chuẩn hóa toàn bộ Tool Schemas trong `starter_v0/artifacts/tools.yaml` (thiết lập ranh giới an toàn cho `create_ticket`, `clarify`, `search_device_info`).
+  - Thực thi kiểm thử bộ 12 test case an toàn (`data/eval_adversarial.json`) với run evidence: `runs/v2_B_adversarial_gemini_20260915T204457659016.json`.
+  - Phân tích chi tiết 3 trường hợp tấn công (A04 Argument Smuggling, A06 Internal Data Exfiltration, A10 Stale Confirmation Attack) và hoàn thiện mục B4a & B6 (Safety Review) trong `REPORT.md`.
 - Quyết định, khó khăn và cách xử lý:
+  - Khó khăn: Ở bản gốc v0, Agent thường xuyên tự ý gọi `create_ticket` mà không hỏi xác nhận người dùng, và khi gặp rate limit HTTP 429 từ provider thì script bị dừng ngang làm fail 13 cases.
+  - Quyết định xử lý: Bổ sung cơ chế auto-retry backoff trong adapter provider; đồng thời chuẩn hóa rõ mô tả `clarify` (3 mode: text, yes_no, choice) và siết chặt ranh giới `create_ticket` trong `tools.yaml` để giải quyết dứt điểm các lỗi missing_info và wrong_boundary.
 - Điều đã học:
+  - Hiểu sâu sắc cơ chế Tool Calling / Function Calling của LLM: Mô hình ra quyết định gọi tool phụ thuộc rất lớn vào mô tả ngữ nghĩa (semantic description) và kiểu dữ liệu (enum, schema).
+  - Nắm vững các kỹ thuật tấn công prompt phổ biến (Argument Smuggling qua pseudo-code, Stale Confirmation, Retrieval Injection) và sự cần thiết của việc xây dựng guardrail đa tầng (tầng prompt + tầng code deterministic).
 - AI/công cụ đã dùng và cách kiểm tra:
+  - Sử dụng Antigravity Coding Assistant để hỗ trợ phân tích code, tối ưu YAML schema và rà soát failure trace.
+  - Kiểm chứng 100% bằng việc chạy eval thực tế qua script `run_eval.py` và kiểm tra filesystem (`tickets/`).
 - Thời điểm đã tự nộp URL repo chung trên VLearn:
 
 ### Gia Huy — *(Điền MSSV)*

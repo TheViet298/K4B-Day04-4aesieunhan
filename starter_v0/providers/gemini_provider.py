@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import os
+import re
+import time
 from typing import Any
 
 from providers.base import ModelResponse, ToolCall
@@ -73,7 +75,7 @@ class GeminiProvider:
         self,
         *,
         api_key_env: str = "GEMINI_API_KEY",
-        default_model: str = "gemini-3.5-flash",
+        default_model: str = "gemini-3.5-flash-lite",
     ) -> None:
         self.api_key_env = api_key_env
         self.default_model = default_model
@@ -106,11 +108,31 @@ class GeminiProvider:
             config_kwargs["tools"] = [types.Tool(function_declarations=declarations)]
 
         client = genai.Client(api_key=api_key)
-        resp = client.models.generate_content(
-            model=model or self.default_model,
-            contents=contents,
-            config=types.GenerateContentConfig(**config_kwargs),
-        )
+        resp = None
+        max_retries = 6
+        for attempt in range(max_retries):
+            try:
+                resp = client.models.generate_content(
+                    model=model or self.default_model,
+                    contents=contents,
+                    config=types.GenerateContentConfig(**config_kwargs),
+                )
+                break
+            except Exception as exc:
+                err_str = str(exc)
+                if ("429" in err_str or "RESOURCE_EXHAUSTED" in err_str) and attempt < max_retries - 1:
+                    delay = 13.0
+                    match = re.search(r"retry in (\d+(?:\.\d+)?)s", err_str)
+                    if match:
+                        delay = float(match.group(1)) + 1.0
+                    else:
+                        match_delay = re.search(r"'retryDelay': '(\d+)s'", err_str)
+                        if match_delay:
+                            delay = float(match_delay.group(1)) + 1.0
+                    print(f"[Gemini 429] Rate limit hit. Pausing {delay:.1f}s before retry {attempt + 1}/{max_retries}...", flush=True)
+                    time.sleep(delay)
+                else:
+                    raise
 
         text_parts: list[str] = []
         calls: list[ToolCall] = []
