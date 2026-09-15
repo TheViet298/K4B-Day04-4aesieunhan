@@ -16,7 +16,7 @@
 |---|---|---|---|---|
 | Ngô Thế Việt | 2A202602594 | TheViet298 | Leader & Prompt Engineering Lead: Quản lý repo, tinh chỉnh `system_prompt.md` & `tools.yaml` (v0-v3), chạy eval, ghi `version_log.csv`, tổng hợp `REPORT.md`. | |
 | Nguyễn Quang Đạo | 2A202602394 | https://github.com/nguyenquangdao2004-glitch | Tool Registry & Safety/Adversarial Lead: Xây dựng tool schemas trong `tools/`, kiểm thử 12 case an toàn/adversarial, phân tích ranh giới an toàn & confirmation guardrails. | |
-| Gia Huy | 2A20262075 | https://github.com/jerrygiahuy | UI & Live Chat Trace Developer: Phụ trách `chat.py`/UI hiển thị tool call/input/kết quả/phiên bản, thực thi và xuất `transcripts/` minh chứng. | |
+| Gia Huy | 2A202602705 | https://github.com/jerrygiahuy | UI & Live Chat Trace Developer: Phụ trách `chat.py`/UI hiển thị tool call/input/kết quả/phiên bản, thực thi và xuất `transcripts/` minh chứng. | |
 | Nguyễn Văn Giáp | 2A202602903 | https://github.com/Giappp | Eval Benchmark & Bonus Lead: Soạn 10 case nhóm (`eval_group.json`), nghiên cứu & phát triển chức năng mở rộng Bonus Feature, đánh giá metric. | |
 
 ## Nhận xét chung
@@ -46,13 +46,17 @@ Sao chép mục này cho từng thành viên. Mỗi thành viên tự viết và
 - AI/công cụ đã dùng và cách kiểm tra:
 - Thời điểm đã tự nộp URL repo chung trên VLearn:
 
-### Gia Huy — 2A20262075
+### Gia Huy — 2A202602705
 
-- Phần việc và file/commit/PR: Phát triển Chat UI (chat.py), hiển thị thông tin trace tool call, arguments, lỗi/kết quả và phiên bản agent, tạo và xuất các file transcript.
-- Quyết định, khó khăn và cách xử lý:
-- Điều đã học:
-- AI/công cụ đã dùng và cách kiểm tra:
-- Thời điểm đã tự nộp URL repo chung trên VLearn:
+- Phần việc và file/commit/PR: Cải thiện `starter_v0/chat.py` để hiển thị tên tool, arguments bằng tiếng Việt và kết quả/lỗi; lưu transcript chạy thật trong `starter_v0/transcripts/`. Đã commit phần trace và transcript tại `d74a889`. Xây dựng khung UI Streamlit và gộp vào `chat.py`, có lịch sử chat, chi tiết tool và tải transcript demo; phần UI chưa kết nối logic AI của nhóm.
+
+- Quyết định, khó khăn và cách xử lý: Gặp lỗi cấu hình API key, lỗi kết nối và giới hạn quota 429 của Gemini. Kiểm tra lại `.env`, lưu log lỗi và dùng chế độ Demo để tiếp tục làm UI. Khi AI trả lời bằng văn bản mô phỏng gọi tool, điều chỉnh cách ghi lịch sử tool trong `chat.py`; phiên chạy sau đã gọi tool thật. Sửa vị trí file để chạy đúng trong `starter_v0`.
+
+- Điều đã học: Phân biệt lời gọi tool thật với văn bản mô tả gọi tool; hiểu vai trò của arguments, kết quả tool và lịch sử hội thoại. Biết xây dựng UI Streamlit, kiểm tra transcript và làm việc trên nhánh Git riêng.
+
+- AI/công cụ đã dùng và cách kiểm tra: Dùng ChatGPT hỗ trợ phân tích lỗi, viết và gộp code; VS Code, Terminal, Git và Streamlit để triển khai. Kiểm tra cú pháp bằng `python -m py_compile`, xem git diff, chạy chat Gemini và đối chiếu log. Đã quan sát tool `clarify` chạy thật và AI nhắc đúng vấn đề đăng nhập; lượt kết thúc trong cùng phiên bị lỗi 429 nên chưa xác nhận hoàn tất toàn bộ kịch bản.
+
+- Thời điểm đã tự nộp URL repo chung trên VLearn: [Điền ngày, giờ sau khi thực sự nộp]
 
 ### Nguyễn Văn Giáp — 2A202602903
 
