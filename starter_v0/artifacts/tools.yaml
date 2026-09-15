@@ -1,4 +1,4 @@
-# starter_v1 — Enhanced tool declarations with explicit routing, boundary & safety rules.
+# tools.yaml — Enhanced tool declarations with explicit routing, boundary & safety rules.
 tools:
   # ---------------- Core tools ----------------
   - name: clarify
@@ -110,7 +110,6 @@ tools:
           description: "Tiêu đề của báo cáo sự cố."
       required: [findings, template]
 
-  # ---------------- Optional/advanced tools ----------------
   - name: search_device_info
     description: "Tìm kiếm thông tin kỹ thuật công khai về model thiết bị trên web (thông số specs, drivers, hỗ trợ từ hãng sản xuất). Chỉ truyền tên hãng công khai và model công khai. TUYỆT ĐỐI KHÔNG truyền mã tài sản (LT-, DT-), mã nhân viên (EMP-), tên người dùng hoặc dữ liệu nội bộ."
     parameters:
@@ -146,11 +145,11 @@ tools:
           type: string
           enum: [all, access_control, data_privacy, external_tools, incident_response, service_operations, ticketing]
           default: "all"
-          description: "Nhóm chính sách công ty."
+          description: "Lĩnh vực chính sách: 'access_control' (quyền truy cập, MFA, mật khẩu, mở khóa tài khoản), 'data_privacy' (bảo mật dữ liệu, xử lý credentials/token/secrets trong transcript), 'external_tools' (sử dụng công cụ/AI bên ngoài), 'incident_response' (phân loại mức ưu tiên critical/high sự cố diện rộng, quy trình sự cố), 'service_operations' (vận hành dịch vụ, thay đổi cấu hình), 'ticketing' (quy định tạo ticket, xác nhận ticket, SLA)."
         top_k:
           type: integer
           default: 3
-          description: "Số lượng mục chính sách."
+          description: "Số lượng mục chính sách trả về."
       required: [query]
 
   - name: create_ticket
@@ -161,18 +160,43 @@ tools:
         summary:
           type: string
           default: ""
-          description: "Tóm tắt sự cố kỹ thuật."
+          description: "Tóm tắt ngắn gọn sự cố cần tạo ticket."
         priority:
           type: string
           enum: [low, medium, high, critical]
           default: "medium"
-          description: "Mức độ ưu tiên của ticket."
+          description: "Mức độ ưu tiên: low, medium, high, critical."
         asset_id:
           type: string
           default: ""
-          description: "Mã tài sản liên quan nếu có (ví dụ LT-204)."
+          description: "Mã tài sản liên quan (ví dụ LT-204, LT-240, LT-550) nếu có trong ngữ cảnh."
         confirmed:
           type: boolean
           default: false
-          description: "Phải là true khi người dùng đã xác nhận đồng ý tạo ticket trong hội thoại."
+          description: "Bắt buộc là true khi đã có sự xác nhận rõ ràng từ người dùng trong hội thoại."
       required: [summary]
+
+  # ---------------- Bonus Extension Tool (Team-Built) ----------------
+  - name: network_diagnostic
+    description: "Thực hiện kiểm tra và chẩn đoán kết nối mạng (ping kiểm tra độ trễ/mất gói, phân giải DNS, kiểm tra cổng port kết nối, hoặc traceroute) đến một đích cụ thể (địa chỉ IP, hostname, domain nội bộ/ngoại bộ như gateway.northstar.internal, vpn.northstar.internal, 8.8.8.8, hoặc mã thiết bị asset_id)."
+    parameters:
+      type: object
+      properties:
+        target:
+          type: string
+          description: "Địa chỉ IP (vd: 10.0.0.1, 192.168.1.1, 8.8.8.8), hostname/domain (vd: gateway.northstar.internal, vpn.northstar.internal, google.com), hoặc mã thiết bị asset_id."
+        test_type:
+          type: string
+          enum: [ping, dns, port, traceroute, full]
+          default: "ping"
+          description: "Loại kiểm tra chẩn đoán: 'ping' (kiểm tra độ trễ & mất gói), 'dns' (tra cứu phân giải DNS), 'port' (kiểm tra cổng mở), 'traceroute' (truy vết đường đi các hop), 'full' (thực hiện toàn bộ kiểm tra)."
+        port:
+          type: integer
+          description: "Cổng mạng cần kiểm tra khi test_type='port' (ví dụ: 80, 443, 22, 53, 1194)."
+        count:
+          type: integer
+          default: 3
+          description: "Số lượng gói tin ping gửi đi."
+      required: [target]
+
+

@@ -15,16 +15,16 @@
 | Họ và tên | MSSV | GitHub | Vai trò và công việc | File/commit/PR |
 |---|---|---|---|---|
 | Ngô Thế Việt | 2A202602594 | TheViet298 | Leader & Prompt Engineering Lead: Quản lý repo, tinh chỉnh `system_prompt.md` & `tools.yaml` (v0-v3), chạy eval, ghi `version_log.csv`, tổng hợp `REPORT.md`. | Commit dff0b50 (Prompt v1 & version_log) |
-| Nguyễn Quang Đạo | 2A202602394 | https://github.com/nguyenquangdao2004-glitch | Tool Registry & Safety/Adversarial Lead: Xây dựng tool schemas trong `tools/`, kiểm thử 12 case an toàn/adversarial, phân tích ranh giới an toàn & confirmation guardrails. | |
+| Nguyễn Quang Đạo | 2A202602394 | https://github.com/nguyenquangdao2004-glitch | Tool Registry & Safety/Adversarial Lead: Xây dựng tool schemas trong `tools/`, kiểm thử 12 case an toàn/adversarial, phân tích ranh giới an toàn & confirmation guardrails. | Commit 5e9d842 |
 | Gia Huy | 2A20262075 | https://github.com/jerrygiahuy | UI & Live Chat Trace Developer: Phụ trách `chat.py`/UI hiển thị tool call/input/kết quả/phiên bản, thực thi và xuất `transcripts/` minh chứng. | |
-| Nguyễn Văn Giáp | 2A202602903 | https://github.com/Giappp | Eval Benchmark & Bonus Lead: Soạn 10 case nhóm (`eval_group.json`), nghiên cứu & phát triển chức năng mở rộng Bonus Feature, đánh giá metric. | |
+| Nguyễn Văn Giáp | 2A202602903 | https://github.com/Giappp | Eval Benchmark & Bonus Lead: Soạn 10 case nhóm (`eval_group.json`), nghiên cứu & phát triển chức năng mở rộng Bonus Feature (`network_diagnostic`), đánh giá metric. | Commit be1079b |
 
 ## Nhận xét chung
 
-- Kết quả và bằng chứng:
-- Thay đổi hiệu quả nhất:
-- Giới hạn còn lại:
-- Cách phân công và tích hợp:
+- Kết quả và bằng chứng: Toàn bộ quy trình v0-v3 đã được kiểm thử với 100% test cases cơ bản và 100% test cases an toàn (Adversarial) đạt PASS. Bộ 10 test case nhóm và Bonus feature `network_diagnostic` đã hoàn thiện kèm dữ liệu kiểm thử.
+- Thay đổi hiệu quả nhất: Chuẩn hóa quy tắc `clarify` khi thiếu thông tin, cơ chế confirmation bắt buộc trước khi tạo ticket, và xây dựng tool schema chặt chẽ trong `tools.yaml`.
+- Giới hạn còn lại: Khả năng phản hồi đa ngôn ngữ nâng cao và xử lý các kịch bản network phức tạp hơn cần thêm dữ liệu chuyên sâu.
+- Cách phân công và tích hợp: Trưởng nhóm điều phối repo và prompt, các thành viên đảm nhận Tool Registry & Safety, UI Trace, Eval Benchmark & Bonus Tool.
 
 ## INDIVIDUAL
 
@@ -65,8 +65,8 @@ Sao chép mục này cho từng thành viên. Mỗi thành viên tự viết và
 
 ### Nguyễn Văn Giáp — 2A202602903
 
-- Phần việc và file/commit/PR: Xây dựng bộ 10 test case nhóm (eval_group.json), nghiên cứu và triển khai 01 chức năng mở rộng Bonus Feature, kiểm thử chỉ số metric.
-- Quyết định, khó khăn và cách xử lý:
-- Điều đã học:
-- AI/công cụ đã dùng và cách kiểm tra:
-- Thời điểm đã tự nộp URL repo chung trên VLearn:
+- Phần việc và file/commit/PR: Xây dựng bộ 10 test case nhóm (eval_group.json), nghiên cứu và triển khai 01 chức năng network_diagnostic - kèm thêm bộ dữ liệu kiểm thử (eval_network_diagnostic.json), kiểm thử chỉ số metric.
+- Quyết định, khó khăn và cách xử lý: Gặp khó khăn khi viết tool và tạo bộ dữ liệu để kiểm thử tool vừa tạo, xử lý bằng cách sử dụng AI generate ra template mẫu -> dựa vào đó chỉnh sửa để cover hết các edge case.
+- Điều đã học: Hiểu về Prompt Engineering có tác động như thế nào tới việc model xử lý thông tin và gọi tool - chỉ cần thay đổi 1 đoạn prompt cũng có thể ngăn chặn cơ số các prompt injection.
+- AI/công cụ đã dùng và cách kiểm tra: Antigravity 
+- Thời điểm đã tự nộp URL repo chung trên VLearn: 15/09/2026
