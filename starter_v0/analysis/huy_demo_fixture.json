@@ -1,0 +1,89 @@
+{
+  "transcript_id": "demo_ui-demo-v1_fixture_fef38cd2f6354f8d9dabea7fb86bae60",
+  "mode": "demo",
+  "version": "ui-demo-v1",
+  "artifact_version": "ui-demo-v1",
+  "prompt_hash": null,
+  "tools_hash": null,
+  "provider": null,
+  "model": null,
+  "system_prompt": null,
+  "tools": null,
+  "history_window": 5,
+  "max_tool_rounds": 4,
+  "created_at": "2026-09-16T01:21:26",
+  "updated_at": "2026-09-16T01:21:26",
+  "turns": [
+    {
+      "turn_index": 1,
+      "request_id": "3472637e603a40bbb8fd2abcb7fb32ac",
+      "started_at": "2026-09-16T01:21:26",
+      "user": "Minh họa giao diện, không gọi API.",
+      "status": "demo_answered",
+      "assistant_text": "Đây là phản hồi mẫu: dịch vụ SSO đang hoạt động bình thường. Kết quả này chỉ dùng để kiểm tra giao diện.",
+      "rounds": [],
+      "tool_events": [
+        {
+          "tool": "check_service_status",
+          "args": {
+            "service": "sso"
+          },
+          "result": {
+            "service": "sso",
+            "status": "operational",
+            "source": "UI demo fixture"
+          }
+        }
+      ],
+      "demo_scenario": "Tra cứu thành công",
+      "ended_at": "2026-09-16T01:21:26"
+    },
+    {
+      "turn_index": 2,
+      "request_id": "899267eebb694b60ae9acafc0f92e24c",
+      "started_at": "2026-09-16T01:21:26",
+      "user": "Minh họa giao diện, không gọi API.",
+      "status": "demo_waiting_for_user",
+      "assistant_text": "Bạn vui lòng cung cấp mã nhân viên để tiếp tục kịch bản minh họa nhé.",
+      "rounds": [],
+      "tool_events": [
+        {
+          "tool": "clarify",
+          "args": {
+            "question": "Mã nhân viên của bạn là gì?",
+            "response_type": "text"
+          },
+          "result": {
+            "awaiting_user": true,
+            "question": "Mã nhân viên của bạn là gì?"
+          }
+        }
+      ],
+      "demo_scenario": "Hỏi lại",
+      "ended_at": "2026-09-16T01:21:26"
+    },
+    {
+      "turn_index": 3,
+      "request_id": "4bf5c4467e424bc7a0ec4c8abb15c9e1",
+      "started_at": "2026-09-16T01:21:26",
+      "user": "Minh họa giao diện, không gọi API.",
+      "status": "demo_error",
+      "assistant_text": "Không thể kiểm tra dịch vụ trong kịch bản demo này. Bạn có thể xem lỗi ở phần chi tiết bên dưới.",
+      "rounds": [],
+      "tool_events": [
+        {
+          "tool": "check_service_status",
+          "args": {
+            "service": "sso"
+          },
+          "result": {
+            "error": "DEMO_TIMEOUT",
+            "message": "Lỗi timeout mô phỏng, không gọi dịch vụ thật."
+          }
+        }
+      ],
+      "demo_scenario": "Lỗi công cụ",
+      "ended_at": "2026-09-16T01:21:26"
+    }
+  ]
+}

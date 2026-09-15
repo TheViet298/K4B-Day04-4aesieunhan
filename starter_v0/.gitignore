@@ -7,3 +7,6 @@ __pycache__/
 !.env.example
 /tickets/
 # Commit reviewed runs, transcripts and analysis as submission evidence.
+
+# Demo sessions are fixtures, never Live evidence.
+/demo_transcripts/

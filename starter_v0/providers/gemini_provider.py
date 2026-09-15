@@ -110,7 +110,8 @@ class GeminiProvider:
         client = genai.Client(api_key=api_key)
         target_model = model or os.getenv("GEMINI_MODEL") or self.default_model
 
-        max_retries = 6
+        # Chat can fail fast on quota; existing eval keeps its six attempts.
+        max_retries = max(1, getattr(self, "max_attempts", 6))
         base_delay = 2.0
         resp = None
 

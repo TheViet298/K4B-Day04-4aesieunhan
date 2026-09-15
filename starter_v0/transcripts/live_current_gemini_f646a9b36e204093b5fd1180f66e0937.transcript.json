@@ -1,0 +1,31 @@
+{
+  "transcript_id": "live_current_gemini_f646a9b36e204093b5fd1180f66e0937",
+  "mode": "live",
+  "version": "current",
+  "artifact_version": "current+p5acbae7cbcb2+t17ea562ed15f",
+  "prompt_hash": "5acbae7cbcb2e252f8c9f51bbb2251cb14657098290ba43665b93aa7a8e4ff07",
+  "tools_hash": "17ea562ed15f462f0aae9abc8972e0029388dbd75d7a5f3c4b8b2d71ceb49daf",
+  "provider": "gemini",
+  "model": "gemini-3.5-flash-lite",
+  "system_prompt": "/Users/huy.tvg2408/K4B-Day04-4aesieunhan/starter_v0/artifacts/system_prompt.md",
+  "tools": "/Users/huy.tvg2408/K4B-Day04-4aesieunhan/starter_v0/artifacts/tools.yaml",
+  "history_window": 5,
+  "max_tool_rounds": 4,
+  "created_at": "2026-09-16T01:16:36",
+  "updated_at": "2026-09-16T01:16:37",
+  "turns": [
+    {
+      "turn_index": 1,
+      "request_id": "6154d80212874b8bb774efcbe502d849",
+      "started_at": "2026-09-16T01:16:36",
+      "user": "Kiểm tra trạng thái dịch vụ VPN ở production bằng công cụ check_service_status đã khai báo, rồi cho tôi kết quả thực tế.",
+      "status": "provider_error",
+      "assistant_text": "",
+      "rounds": [],
+      "tool_events": [],
+      "error": "ConnectError: [Errno 8] nodename nor servname provided, or not known",
+      "ended_at": "2026-09-16T01:16:37"
+    }
+  ],
+  "verification_scenario": "lookup"
+}

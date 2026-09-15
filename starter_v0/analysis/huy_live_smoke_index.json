@@ -1,0 +1,50 @@
+[
+  {
+    "scenario": "lookup",
+    "transcript": "transcripts/live_current_gemini_589f8f7023e243b88451b40f6cd63a50.transcript.json",
+    "statuses": [
+      "answered"
+    ],
+    "tool_calls": [
+      []
+    ]
+  },
+  {
+    "scenario": "clarify_context",
+    "transcript": "transcripts/live_current_gemini_e38026e1fcd4474daa0bdc561c13d4b4.transcript.json",
+    "statuses": [
+      "answered",
+      "answered",
+      "answered"
+    ],
+    "tool_calls": [
+      [],
+      [],
+      []
+    ]
+  },
+  {
+    "scenario": "ticket_confirm",
+    "transcript": "transcripts/live_current_gemini_751f589592314767bb852c2138dbb44c.transcript.json",
+    "statuses": [
+      "answered",
+      "answered"
+    ],
+    "tool_calls": [
+      [],
+      []
+    ]
+  },
+  {
+    "scenario": "ticket_cancel",
+    "transcript": "transcripts/live_current_gemini_91f9c704df864ecfb7adee388049904a.transcript.json",
+    "statuses": [
+      "answered",
+      "answered"
+    ],
+    "tool_calls": [
+      [],
+      []
+    ]
+  }
+]

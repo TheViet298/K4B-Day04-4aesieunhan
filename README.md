@@ -92,3 +92,68 @@ Thay `openrouter` bằng `openai`, `anthropic` hoặc `gemini` khi dùng provide
 Buổi học: **17:30–21:00**. 17:30–17:40 giới thiệu, 17:40–17:50 Kahoot, 17:50–20:25 làm nhóm, 20:25–21:00 demo. Mốc kiểm tra tại lớp là 20:25; xem [CHECKPOINTS.md](CHECKPOINTS.md).
 
 Hạn mặc định là **23:59 ngày học, Asia/Ho_Chi_Minh (UTC+07:00)**. Xem [SUBMISSION.md](SUBMISSION.md) và [RULES.md](RULES.md) để biết bản chốt và quy định nộp muộn.
+
+## UI và CLI hợp nhất — phần Trần Vũ Gia Huy (2A202602705)
+
+Source chính là `starter_v0/chat.py`; không dùng `app.py` hoặc bản repo lồng.
+Cài dependency từ thư mục gốc repo (macOS/Linux):
+
+```bash
+source starter_v0/.venv/bin/activate
+python -m pip install -r starter_v0/requirements.txt
+python -m streamlit run starter_v0/chat.py -- --ui
+```
+
+Nếu terminal đã ở `starter_v0`, dùng:
+
+```bash
+python -m streamlit run chat.py -- --ui
+```
+
+- **Demo** mặc định không cần API: chọn tra cứu thành công, hỏi lại hoặc lỗi công cụ.
+  UI và JSON đều ghi rõ mô phỏng; file tự lưu trong `starter_v0/demo_transcripts/`,
+  tách khỏi evidence Live. Demo không chạy registry và không tạo ticket.
+- **Live** dùng provider, tool registry và artifact hiện có của nhóm. Chọn provider/model
+  trong mục thu gọn **Cấu hình Live**. API key đọc qua `starter_v0/.env` hoặc
+  `DAY04_ENV_FILE` theo cơ chế sẵn có; không nhập key vào UI.
+- Provider, model thực dùng và artifact hash hiện trên giao diện và transcript.
+  Model nhập tay được ưu tiên; Gemini tiếp theo dùng `GEMINI_MODEL`, rồi mặc định adapter.
+  UI chỉ nhận nhãn version trong `version_log.csv` khi cả hai hash khớp; nếu không,
+  hiển thị `current+p…+t…`. Artifact đã merge hiện không khớp hash v3 đã ghi trong log.
+- Mỗi cấu hình Demo/Live/provider/model/artifact có lịch sử riêng trong phiên trình duyệt.
+  Đổi cấu hình rồi quay lại sẽ thấy lịch sử cũ; **Cuộc trò chuyện mới** chỉ reset cấu hình
+  đang chọn. Refresh toàn bộ tab/server restart không khôi phục lịch sử vào RAM; JSON đã lưu vẫn còn.
+- Mỗi lượt hiện trạng thái, tool name, arguments và kết quả/lỗi. JSON có `reply` được trình bày
+  dễ đọc; nội dung gốc vẫn nằm trong `assistant_text` và chi tiết vòng gọi model.
+  Văn bản `TOOL_CALLS_JSON` không được parse thành lời gọi công cụ.
+- Live tự lưu trong `starter_v0/transcripts/`; nút tải xuống xuất phiên hiện tại.
+  Lỗi ghi đĩa vẫn giữ phiên trong RAM để tải. Lượt lỗi model vẫn giữ tool trace đã chạy.
+  Gemini chat không tự retry quota; không tự chạy lại lượt khi tải hoặc rerun.
+- Theme xanh đen–tím nằm trực tiếp trong `chat.py`, áp dụng cả khi chạy từ gốc repo
+  và từ `starter_v0`; không phụ thuộc file theme ở thư mục làm việc.
+
+CLI giữ cú pháp cũ (không cần `--cli`):
+
+```bash
+python starter_v0/chat.py --provider gemini --version current
+# Có thể chọn model cụ thể:
+python starter_v0/chat.py --provider gemini --model gemini-3.5-flash-lite --version current
+```
+
+`--version` ở CLI là nhãn do người chạy cung cấp; transcript luôn ghi hash thật.
+Chỉ dùng `v3` nếu đã đối chiếu artifact; đổi nhãn không biến artifact hiện tại thành bản đã eval.
+Gõ `/exit` để kết thúc. CLI hỗ trợ `--system-prompt`, `--tools`, `--history-window`,
+`--max-tool-rounds` và `--transcripts-dir` như trước.
+
+Kiểm thử offline/mock (không gọi API, không ghi ticket):
+
+```bash
+python -m unittest discover -s starter_v0/tests -v
+```
+
+Evidence và giới hạn thực tế: [bản kiểm chứng UI/Live](starter_v0/analysis/huy_ui_verification.md),
+[REPORT A4/B4](starter_v0/artifacts/REPORT.md). Không dùng transcript Demo/mock làm bằng chứng Live.
+
+Đã ghép lại nội dung còn phù hợp của stash **Huy README before main merge**:
+source hợp nhất, hướng dẫn theo thư mục chạy, cấu hình môi trường, transcript và CLI.
+Các lệnh cũ không có `--ui`, dùng `--cli` hoặc trỏ `chat.py` ở gốc được thay bằng lệnh trên.

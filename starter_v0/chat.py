@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import argparse
+import csv
+import os
+from uuid import uuid4
 import json
 import re
 from datetime import datetime
@@ -8,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 def load_backend():
-    """Load lab dependencies only for real CLI chat; demo UI needs no API."""
+    """Load the shared provider adapters, registry and environment; no API request."""
     global make_provider, ToolCall, TOOL_FUNCTIONS
     global load_tool_declarations, to_openai_tools
     global artifact_version_dict, build_artifact_version
@@ -20,7 +23,7 @@ def load_backend():
     load_lab_env(ROOT)
 
 
-ROOT = Path(__file__).parent
+ROOT = Path(__file__).resolve().parent
 ARTIFACTS_DIR = ROOT / "artifacts"
 
 
@@ -57,7 +60,7 @@ def execute_tool_call(call: ToolCall) -> dict[str, Any]:
     try:
         result = func(**call.args)
     except Exception as exc:
-        result = {"error": type(exc).__name__, "message": str(exc)}
+        result = {"error": type(exc).__name__, "message": safe_error(exc)}
     return {"tool": call.name, "args": call.args, "result": result}
 
 
@@ -94,13 +97,25 @@ def run_model_tool_loop(
     tools: list[dict[str, Any]],
     model: str | None,
     max_tool_rounds: int,
+    on_progress: Any = None,
 ) -> dict[str, Any]:
+    load_backend()
+    if max_tool_rounds < 1:
+        raise ValueError("max_tool_rounds must be at least 1")
     working_messages = list(messages)
+    ticket_attempted = False
     rounds: list[dict[str, Any]] = []
     all_tool_events: list[dict[str, Any]] = []
 
     for round_index in range(1, max_tool_rounds + 1):
-        response = provider.complete(working_messages, tools, model=model, temperature=0.0)
+        try:
+            response = provider.complete(working_messages, tools, model=model, temperature=0.0)
+        except Exception as exc:
+            return {
+                "status": "provider_error", "assistant_text": "",
+                "error": safe_error(exc), "rounds": rounds,
+                "tool_events": all_tool_events,
+            }
         calls = response.tool_calls
         round_record: dict[str, Any] = {
             "round": round_index,
@@ -122,11 +137,19 @@ def run_model_tool_loop(
         non_clarification_events: list[dict[str, Any]] = []
 
         for call in calls:
-            print(f"[tool] {call.name}({json.dumps(call.args, ensure_ascii=False, sort_keys=True)})")
-            event = execute_tool_call(call)
-            print(f"[result] {json_text(event['result'])}")
+            if call.name == "create_ticket" and ticket_attempted:
+                event = {"tool": call.name, "args": call.args, "result": {
+                    "error": "duplicate_write_blocked",
+                    "message": "Ticket creation was already attempted in this turn. Inspect its result; do not retry automatically.",
+                }}
+            else:
+                if call.name == "create_ticket":
+                    ticket_attempted = True
+                event = execute_tool_call(call)
             round_record["tool_results"].append(event)
             all_tool_events.append(event)
+            if on_progress:
+                on_progress({"rounds": [*rounds, round_record], "tool_events": all_tool_events})
 
             # Detect the clarification/pause tool by its output flag (rename-proof),
             # not by a hard-coded tool name.
@@ -157,128 +180,253 @@ def run_model_tool_loop(
 def write_transcript(path: Path, transcript: dict[str, Any]) -> None:
     transcript["updated_at"] = now_iso()
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(transcript, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+    # Replace atomically so a partial write does not corrupt the previous trace.
+    temporary = path.with_name(f".{path.name}.{uuid4().hex}.tmp")
+    try:
+        temporary.write_text(json_text(transcript), encoding="utf-8")
+        temporary.replace(path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+
+def safe_error(exc: Exception) -> str:
+    """Keep diagnostic details while removing configured credentials from errors."""
+    message = f"{type(exc).__name__}: {exc}"
+    for name, value in os.environ.items():
+        if value and any(part in name.upper() for part in ("KEY", "TOKEN", "SECRET", "PASSWORD")):
+            message = message.replace(value, "[REDACTED]")
+    return message
+
+
+def display_reply(text: str | None) -> str:
+    """Presentation only; never interpret text as executable tool calls."""
+    raw = text or ""
+    candidate = raw.strip()
+    if candidate.startswith("```json\n") and candidate.endswith("```"):
+        candidate = candidate[8:-3].strip()
+    elif candidate.startswith("```\n") and candidate.endswith("```"):
+        candidate = candidate[4:-3].strip()
+    try:
+        value = json.loads(candidate)
+    except (ValueError, TypeError):
+        return raw
+    return value["reply"] if isinstance(value, dict) and isinstance(value.get("reply"), str) else raw
+
+
+def current_version() -> str:
+    """Use a recorded version only when BOTH actual artifact hashes match."""
+    load_backend()
+    actual = artifact_version_dict(build_artifact_version("current", ARTIFACTS_DIR / "system_prompt.md", ARTIFACTS_DIR / "tools.yaml"))
+    path = ARTIFACTS_DIR / "version_log.csv"
+    if path.exists():
+        for row in reversed(list(csv.DictReader(path.read_text(encoding="utf-8").splitlines()))):
+            if all(len(row.get(key, "")) >= 12 and actual[key].startswith(row[key]) for key in ("prompt_hash", "tools_hash")):
+                return row["version"]
+    return "current"
+
+
+def resolve_model(provider_name: str, provider: Any, model: str | None) -> str:
+    return model or (os.getenv("GEMINI_MODEL") if provider_name == "gemini" else None) or provider.default_model
+
+
+def new_session(*, mode: str, provider_name: str | None = None,
+                model: str | None = None, version: str = "current",
+                prompt_path: Path = ARTIFACTS_DIR / "system_prompt.md",
+                tools_path: Path = ARTIFACTS_DIR / "tools.yaml",
+                history_window: int = 5, max_tool_rounds: int = 4) -> dict[str, Any]:
+    load_backend()
+    artifact = artifact_version_dict(build_artifact_version(version, prompt_path, tools_path)) if mode == "live" else {
+        "version": "ui-demo-v1", "artifact_version": "ui-demo-v1",
+        "prompt_hash": None, "tools_hash": None,
+    }
+    return {
+        "transcript_id": f"{mode}_{safe_slug(artifact['version'])}_{safe_slug(provider_name or 'fixture')}_{uuid4().hex}",
+        "mode": mode, **artifact, "provider": provider_name if mode == "live" else None,
+        "model": model if mode == "live" else None,
+        "system_prompt": str(prompt_path) if mode == "live" else None,
+        "tools": str(tools_path) if mode == "live" else None,
+        "history_window": history_window, "max_tool_rounds": max_tool_rounds,
+        "created_at": now_iso(), "updated_at": now_iso(), "turns": [],
+    }
+
+
+def session_history(session: dict[str, Any]) -> list[dict[str, str]]:
+    history = []
+    window = session["history_window"]
+    for turn in session["turns"][-window:] if window > 0 else []:
+        content = turn.get("assistant_text") or ""
+        if turn.get("tool_events"):
+            content += "\nExecuted local tool results (already executed; do not repeat writes):\n" + json_text(turn["tool_events"], max_chars=24000)
+        if turn.get("error") or turn["status"] in {"started", "interrupted"}:
+            content += "\nTurn did not finish. Do not automatically repeat earlier actions."
+        history.extend([{"role": "user", "content": turn["user"]}, {"role": "assistant", "content": content}])
+    return history
+
+
+def submit_turn(session: dict[str, Any], user_text: str, *, provider: Any = None,
+                scenario: str = "Tra cứu thành công", request_id: str | None = None,
+                transcript_path: Path | None = None) -> dict[str, Any]:
+    """Called only by a submit event; same request ID is never executed twice."""
+    request_id = request_id or uuid4().hex
+    for previous in session["turns"]:
+        if previous.get("request_id") == request_id:
+            return previous
+    history = session_history(session)
+    turn = {"turn_index": len(session["turns"]) + 1, "request_id": request_id,
+            "started_at": now_iso(), "user": user_text, "status": "started",
+            "assistant_text": "", "rounds": [], "tool_events": []}
+    session["turns"].append(turn)
+
+    def checkpoint(update=None):
+        if update:
+            turn.update(update)
+        if transcript_path:
+            try:
+                write_transcript(transcript_path, session)
+                session.pop("save_error", None)
+            except OSError as exc:
+                session["save_error"] = safe_error(exc)
+
+    checkpoint()
+    try:
+        if session["mode"] == "demo":
+            turn["demo_scenario"] = scenario
+            turn.update(demo_response(user_text, scenario))
+        else:
+            load_backend()
+            provider = provider if provider is not None else make_provider(session["provider"])
+            if session["provider"] == "gemini":
+                provider.max_attempts = 1  # No automatic quota retry in interactive chat.
+            prompt = Path(session["system_prompt"]).read_text(encoding="utf-8")
+            tools = to_openai_tools(load_tool_declarations(Path(session["tools"])))
+            # A session owns its artifact hashes; refuse silently changed files.
+            actual = artifact_version_dict(build_artifact_version(session["version"], Path(session["system_prompt"]), Path(session["tools"])))
+            if actual["artifact_version"] != session["artifact_version"]:
+                raise ValueError("Artifacts changed. Start a new conversation before continuing.")
+            turn.update(run_model_tool_loop(
+                provider=provider, messages=[{"role": "system", "content": prompt}, *history, {"role": "user", "content": user_text}],
+                tools=tools, model=session["model"], max_tool_rounds=session["max_tool_rounds"], on_progress=checkpoint,
+            ))
+    except Exception as exc:
+        turn.update(status="provider_error", error=safe_error(exc))
+    finally:
+        if turn["status"] == "started":
+            turn.update(status="interrupted", error="Lượt bị gián đoạn; không tự chạy lại. Kiểm tra tool trace trước khi gửi yêu cầu mới.")
+        turn["ended_at"] = now_iso()
+        checkpoint()
+    return turn
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Interactive IT Helpdesk Agent chat with transcript logging.")
     parser.add_argument("--provider", choices=["openrouter", "openai", "anthropic", "gemini"], required=True)
     parser.add_argument("--model", default=None)
-    parser.add_argument("--version", required=True, help="Student-chosen artifact version label, e.g. v0, v1, v2.")
+    parser.add_argument("--version", required=True, help="Artifact label; actual prompt/tools hashes are recorded.")
     parser.add_argument("--system-prompt", type=Path, default=ARTIFACTS_DIR / "system_prompt.md")
     parser.add_argument("--tools", type=Path, default=ARTIFACTS_DIR / "tools.yaml")
     parser.add_argument("--transcripts-dir", type=Path, default=ROOT / "transcripts")
-    parser.add_argument("--history-window", type=int, default=5, help="Keep the last N user/assistant pairs in context.")
+    parser.add_argument("--history-window", type=int, default=5)
     parser.add_argument("--max-tool-rounds", type=int, default=4)
     args = parser.parse_args()
+    if args.history_window < 0 or args.max_tool_rounds < 1:
+        parser.error("history-window must be nonnegative; max-tool-rounds must be positive")
     load_backend()
-
-    system_prompt = args.system_prompt.read_text(encoding="utf-8")
-    tool_declarations = load_tool_declarations(args.tools)
-    openai_tools = to_openai_tools(tool_declarations)
     provider = make_provider(args.provider)
-    selected_model = args.model or getattr(provider, "default_model", None)
-    artifact_version = build_artifact_version(args.version, args.system_prompt, args.tools)
-
-    timestamp = datetime.now().strftime("%Y%m%dT%H%M%S%f")
-    transcript_id = "_".join([
-        safe_slug(args.version),
-        safe_slug(args.provider),
-        timestamp,
-    ])
-    transcript_path = args.transcripts_dir / f"{transcript_id}.transcript.json"
-    transcript: dict[str, Any] = {
-        "transcript_id": transcript_id,
-        **artifact_version_dict(artifact_version),
-        "provider": args.provider,
-        "model": selected_model,
-        "system_prompt": str(args.system_prompt),
-        "tools": str(args.tools),
-        "history_window": args.history_window,
-        "max_tool_rounds": args.max_tool_rounds,
-        "created_at": now_iso(),
-        "updated_at": now_iso(),
-        "turns": [],
-    }
-
-    print(f"IT Helpdesk Agent chat. artifact_version={artifact_version.artifact_version}")
+    session = new_session(mode="live", provider_name=args.provider, model=resolve_model(args.provider, provider, args.model),
+                          version=args.version, prompt_path=args.system_prompt, tools_path=args.tools,
+                          history_window=args.history_window, max_tool_rounds=args.max_tool_rounds)
+    path = args.transcripts_dir / f"{session['transcript_id']}.transcript.json"
+    print(f"IT Helpdesk Agent. {session['provider']} / {session['model']} / {session['artifact_version']}")
     print("Type /exit to stop.")
-
-    history: list[dict[str, str]] = []
-    turn_index = 0
     while True:
         try:
             user_text = input("\nYou> ").strip()
         except (EOFError, KeyboardInterrupt):
             print()
             break
-
-        if not user_text:
-            continue
         if user_text in {"/exit", "/quit"}:
             break
+        if not user_text:
+            continue
+        turn = submit_turn(session, user_text, provider=provider, transcript_path=path)
+        for event in turn["tool_events"]:
+            print(f"[tool] {event['tool']}({json_text(event['args'])})")
+            print(f"[result] {json_text(event['result'])}")
+        print(f"\nAgent> {turn['assistant_text']}\nStatus: {turn['status']}")
+        if turn.get("error"):
+            print(f"ERROR> {turn['error']}")
+        if session.get("save_error"):
+            print(f"SAVE ERROR> {session['save_error']}")
+    try:
+        write_transcript(path, session)
+        print(f"Final transcript: {path}")
+    except OSError as exc:
+        print(f"SAVE ERROR> {safe_error(exc)}")
 
-        turn_index += 1
-        messages = [
-            {"role": "system", "content": system_prompt},
-            *trim_history(history, args.history_window),
-            {"role": "user", "content": user_text},
-        ]
 
-        turn_record: dict[str, Any] = {
-            "turn_index": turn_index,
-            "started_at": now_iso(),
-            "user": user_text,
-            "status": "started",
-            "assistant_text": None,
-            "rounds": [],
-            "tool_events": [],
+def demo_response(text, scenario):
+    """Offline fixtures only: never invoke the provider or tool registry."""
+    if scenario == "Lỗi công cụ":
+        return {
+            "assistant_text": (
+                "Không thể kiểm tra dịch vụ trong kịch bản demo này. "
+                "Bạn có thể xem lỗi ở phần chi tiết bên dưới."
+            ),
+            "status": "demo_error",
+            "tool_events": [{
+                "tool": "check_service_status",
+                "args": {"service": "sso"},
+                "result": {
+                    "error": "DEMO_TIMEOUT",
+                    "message": "Lỗi timeout mô phỏng, không gọi dịch vụ thật.",
+                },
+            }],
         }
 
-        try:
-            result = run_model_tool_loop(
-                provider=provider,
-                messages=messages,
-                tools=openai_tools,
-                model=args.model,
-                max_tool_rounds=args.max_tool_rounds,
-            )
-            turn_record.update(result)
-            assistant_text = result["assistant_text"]
-            print(f"\nAgent> {assistant_text}")
-            history.append({"role": "user", "content": user_text})
-            history.append({"role": "assistant", "content": assistant_text})
-        except Exception as exc:
-            turn_record.update({
-                "status": "provider_error",
-                "error": f"{type(exc).__name__}: {str(exc)}",
-            })
-            print(f"\nERROR> {turn_record['error']}")
+    if scenario == "Hỏi lại":
+        return {
+            "assistant_text": (
+                "Bạn vui lòng cung cấp mã nhân viên để tiếp tục "
+                "kịch bản minh họa nhé."
+            ),
+            "status": "demo_waiting_for_user",
+            "tool_events": [{
+                "tool": "clarify",
+                "args": {
+                    "question": "Mã nhân viên của bạn là gì?",
+                    "response_type": "text",
+                },
+                "result": {
+                    "awaiting_user": True,
+                    "question": "Mã nhân viên của bạn là gì?",
+                },
+            }],
+        }
 
-        turn_record["ended_at"] = now_iso()
-        transcript["turns"].append(turn_record)
-        write_transcript(transcript_path, transcript)
-        print(f"Transcript saved: {transcript_path}")
+    return {
+        "assistant_text": (
+            "Đây là phản hồi mẫu: dịch vụ SSO đang hoạt động bình thường. "
+            "Kết quả này chỉ dùng để kiểm tra giao diện."
+        ),
+        "status": "demo_answered",
+        "tool_events": [{
+            "tool": "check_service_status",
+            "args": {"service": "sso"},
+            "result": {
+                "service": "sso",
+                "status": "operational",
+                "source": "UI demo fixture",
+            },
+        }],
+    }
 
-    write_transcript(transcript_path, transcript)
-    print(f"Final transcript: {transcript_path}")
 
 
 def ui_main():
-    """Existing styled demo UI; backend integration remains a separate task."""
-    import json
-    from datetime import datetime
-    from uuid import uuid4
-
     import streamlit as st
-
-
-    st.set_page_config(
-        page_title="Northstar • IT Helpdesk",
-        page_icon="💬",
-        layout="wide",
-    )
-
+    load_backend()
+    st.set_page_config(page_title="Northstar • IT Helpdesk", page_icon="💬", layout="wide")
     st.markdown("""
     <style>
     .stApp {
@@ -295,8 +443,39 @@ def ui_main():
         border-right: 1px solid #25304a;
     }
 
-    [data-testid="stSidebar"] * {
-        color: #e7ecf5;
+    /* Explicit foreground AND background: works even with Streamlit's light theme. */
+    [data-testid="stWidgetLabel"], [data-testid="stExpander"] summary,
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] {
+        color: #e7ecf5 !important;
+    }
+    [data-testid="stTextInput"] input, [data-testid="stNumberInput"] input,
+    [data-baseweb="select"] > div, [data-baseweb="select"] input {
+        background: #202b43 !important;
+        color: #f5f7ff !important;
+        -webkit-text-fill-color: #f5f7ff !important;
+    }
+    [data-baseweb="select"] svg { fill: #d8d1ff !important; }
+    [role="listbox"], [role="option"] {
+        background: #202b43 !important; color: #f5f7ff !important;
+    }
+    [role="option"][aria-selected="true"], [role="option"]:hover {
+        background: #433878 !important;
+    }
+    [data-testid="stAlert"] {
+        background: #202b43 !important; color: #f5f7ff !important;
+        border: 1px solid #66789e;
+    }
+    [data-testid="stAlert"] p, [data-testid="stAlert"] svg {
+        color: #f5f7ff !important;
+    }
+    [data-testid="stNumberInput"] button {
+        background: #202b43 !important; color: #f5f7ff !important;
+    }
+    [data-testid="stChatInputSubmitButton"] {
+        background: #5746ae !important; color: #ffffff !important;
+    }
+    [data-testid="stTextInput"] input::placeholder {
+        color: #bac6de !important; -webkit-text-fill-color: #bac6de !important;
     }
 
     .block-container {
@@ -338,17 +517,20 @@ def ui_main():
     }
 
     [data-testid="stChatInput"] textarea {
-        color: #f5f7ff;
-        background: #151e33;
+        color: #f5f7ff !important;
+        -webkit-text-fill-color: #f5f7ff !important;
+        background: #151e33 !important;
     }
 
     [data-testid="stChatInput"] textarea::placeholder {
-        color: #9aa8c3;
+        color: #bac6de !important;
+        -webkit-text-fill-color: #bac6de !important;
+        opacity: 1;
     }
 
     .stButton > button,
     .stDownloadButton > button {
-        background: #7565ed;
+        background: #5746ae;
         color: white !important;
         border: 1px solid #9385ff;
         border-radius: 12px;
@@ -358,7 +540,7 @@ def ui_main():
 
     .stButton > button:hover,
     .stDownloadButton > button:hover {
-        background: #8878ff;
+        background: #6553bd;
         border-color: #b4aaff;
     }
 
@@ -434,98 +616,40 @@ def ui_main():
     </style>
     """, unsafe_allow_html=True)
 
-    def new_session():
-        return {
-            "session_id": uuid4().hex,
-            "created_at": datetime.now().isoformat(timespec="seconds"),
-            "mode": "demo",
-            "version": "ui-demo-v1",
-            "provider": None,
-            "model": None,
-            "turns": [],
-        }
-
-
-    def demo_response(text, scenario):
-        """Điểm nối backend sau này. Hiện chỉ trả dữ liệu mô phỏng."""
-        if scenario == "Lỗi công cụ":
-            return {
-                "assistant_text": (
-                    "Không thể kiểm tra dịch vụ trong kịch bản demo này. "
-                    "Bạn có thể xem lỗi ở phần chi tiết bên dưới."
-                ),
-                "status": "demo_error",
-                "tool_events": [{
-                    "tool": "check_service_status",
-                    "args": {"service": "sso"},
-                    "result": {
-                        "error": "DEMO_TIMEOUT",
-                        "message": "Lỗi timeout mô phỏng, không gọi dịch vụ thật.",
-                    },
-                }],
-            }
-
-        if scenario == "Hỏi lại":
-            return {
-                "assistant_text": (
-                    "Bạn vui lòng cung cấp mã nhân viên để tiếp tục "
-                    "kịch bản minh họa nhé."
-                ),
-                "status": "waiting_for_user",
-                "tool_events": [{
-                    "tool": "clarify",
-                    "args": {
-                        "question": "Mã nhân viên của bạn là gì?",
-                        "response_type": "text",
-                    },
-                    "result": {
-                        "awaiting_user": True,
-                        "question": "Mã nhân viên của bạn là gì?",
-                    },
-                }],
-            }
-
-        return {
-            "assistant_text": (
-                "Đây là phản hồi mẫu: dịch vụ SSO đang hoạt động bình thường. "
-                "Kết quả này chỉ dùng để kiểm tra giao diện."
-            ),
-            "status": "demo_answered",
-            "tool_events": [{
-                "tool": "check_service_status",
-                "args": {"service": "sso"},
-                "result": {
-                    "service": "sso",
-                    "status": "operational",
-                    "source": "UI demo fixture",
-                },
-            }],
-        }
-
-
-    if "demo_session" not in st.session_state:
-        st.session_state.demo_session = new_session()
 
     with st.sidebar:
         st.title("💬 Northstar")
         st.caption("IT HELPDESK · 4aesieunhan")
-        st.divider()
-        st.markdown("**Chế độ:** Demo")
-        st.markdown("**Phiên bản UI:** `ui-demo-v1`")
-        st.caption("Provider / Model: chưa kết nối")
+        mode_label = st.selectbox("Chế độ", ["Demo", "Live"], key="mode")
+        mode = mode_label.lower()
+        scenario = "Tra cứu thành công"
+        provider_name, model = None, None
+        version = "ui-demo-v1"
+        if mode == "demo":
+            scenario = st.selectbox("Kịch bản Demo", ["Tra cứu thành công", "Hỏi lại", "Lỗi công cụ"])
+        else:
+            with st.expander("Cấu hình Live", expanded=False):
+                provider_name = st.selectbox("Provider", ["gemini", "openrouter", "openai", "anthropic"], key="provider")
+                requested_model = st.text_input("Model (trống = mặc định)", key=f"model_{provider_name}").strip() or None
+            provider = make_provider(provider_name)
+            model = resolve_model(provider_name, provider, requested_model)
+            version = current_version()
+        reset = st.button("＋ Cuộc trò chuyện mới", use_container_width=True)
 
-        scenario = st.selectbox(
-            "Kịch bản phản hồi mẫu",
-            ["Tra cứu thành công", "Hỏi lại", "Lỗi công cụ"],
-        )
-        st.caption("Phản hồi phụ thuộc kịch bản đã chọn, không phân tích bằng AI.")
-
-        if st.button("＋ Cuộc trò chuyện mới", use_container_width=True):
-            st.session_state.demo_session = new_session()
-            st.rerun()
-
-    session = st.session_state.demo_session
-
+    try:
+        candidate = new_session(mode=mode, provider_name=provider_name, model=model, version=version)
+    except Exception as exc:
+        st.error(safe_error(exc))
+        st.stop()
+    config = (mode, provider_name, model, candidate["artifact_version"])
+    sessions = st.session_state.setdefault("chat_sessions", {})
+    if reset or config not in sessions:
+        sessions[config] = candidate
+    session = sessions[config]
+    st.session_state.active_chat = session
+    # Separate demo files from reviewed Live evidence.
+    directory = ROOT / ("demo_transcripts" if mode == "demo" else "transcripts")
+    path = directory / f"{session['transcript_id']}.transcript.json"
     st.markdown("""
     <div class="hero">
         <div class="hero-label">NORTHSTAR / IT SERVICE DESK</div>
@@ -535,86 +659,64 @@ def ui_main():
     </div>
     """, unsafe_allow_html=True)
 
+
+    if mode == "demo":
+        st.info("DEMO — Phản hồi và tool trace mô phỏng. Không gọi API hoặc thực thi công cụ. Không dùng làm evidence Live.")
+    else:
+        st.info("LIVE — AI kết nối provider; công cụ dùng dữ liệu giả lập của bài lab.")
+    st.caption(f"Provider: {session['provider'] or 'không dùng (Demo)'} · Model: {session['model'] or 'fixture'}")
+    st.caption(f"Artifact: {session['artifact_version']}")
+    if mode == "live" and version == "current":
+        st.caption("Artifact hiện tại chưa khớp cặp hash trong version_log.csv; không gắn nhãn v3.")
+
+    def render_turn(turn):
+        with st.chat_message("user"):
+            st.write(turn["user"])
+        with st.chat_message("assistant"):
+            st.write(display_reply(turn.get("assistant_text")))
+            st.caption(f"{mode.upper()} · Lượt {turn['turn_index']} · {turn['status']}")
+            if turn.get("error"):
+                st.error(turn["error"])
+                st.caption("Không tự gửi lại yêu cầu. Kiểm tra các công cụ đã chạy trước khi tiếp tục.")
+            if turn["status"] == "max_tool_rounds":
+                st.warning("Đã đạt giới hạn vòng công cụ; tác vụ có thể chưa hoàn tất.")
+            if not turn["tool_events"]:
+                if mode == "live":
+                    st.warning("Lượt này chỉ có phản hồi văn bản, không có công cụ nào được thực thi. Lời AI nói đã tra cứu hoặc tạo ticket chưa phải kết quả được xác minh.")
+                else:
+                    st.caption("Không có công cụ nào được thực thi trong lượt này.")
+            for event in turn["tool_events"]:
+                with st.expander(f"🔧 {event['tool']}" + (" · mô phỏng" if mode == "demo" else "")):
+                    st.markdown("**Arguments**")
+                    st.json(event["args"])
+                    st.markdown("**Kết quả / lỗi**")
+                    result = event["result"]
+                    if isinstance(result, dict) and result.get("error"):
+                        st.error(result.get("message") or str(result["error"]))
+                    st.json(result)
+            if turn.get("assistant_text") and display_reply(turn["assistant_text"]) != turn["assistant_text"]:
+                with st.expander("Phản hồi gốc của AI"):
+                    st.code(turn["assistant_text"], language="json")
+
     if not session["turns"]:
-        cards = st.columns(3)
-        services = [
-            ("🔐 Tài khoản", "Đăng nhập, tài khoản bị khóa và MFA"),
-            ("🌐 Kết nối", "VPN, Wi-Fi và dịch vụ nội bộ"),
-            ("💻 Thiết bị", "Máy tính, phần mềm và thiết bị văn phòng"),
-        ]
-        for column, (title, description) in zip(cards, services):
-            with column:
-                st.markdown(
-                    f'<div class="service-card">'
-                    f'<strong>{title}</strong>'
-                    f'<span>{description}</span>'
-                    f'</div>',
-                    unsafe_allow_html=True,
-                )
-    st.info(
-        "DEMO — Dữ liệu mô phỏng. Không gọi API, không thực thi tool "
-        "và không tạo ticket thật."
-    )
-
-    chat_column, guide_column = st.columns([3, 1])
-
-    with guide_column:
-        st.subheader("Thông tin phiên")
-        st.caption(f"Mã phiên: {session['session_id'][:8]}")
-        st.caption(f"Bắt đầu: {session['created_at']}")
-        st.markdown(
-            "**Thử giao diện**\n\n"
-            "1. Chọn kịch bản ở thanh bên.\n"
-            "2. Gửi một tin nhắn.\n"
-            "3. Mở chi tiết tool bên dưới phản hồi.\n"
-            "4. Tải transcript demo."
-        )
-
-    with chat_column:
-        if not session["turns"]:
-            st.markdown("### Chào bạn 👋")
-            st.write("Bạn cần hỗ trợ vấn đề gì hôm nay?")
-            st.caption("Ví dụ: Tôi không đăng nhập được tài khoản công ty.")
-
-        for turn in session["turns"]:
-            with st.chat_message("user"):
-                st.write(turn["user"])
-
-            with st.chat_message("assistant"):
-                st.write(turn["assistant_text"])
-                st.caption(f"Trạng thái: {turn['status']} · DEMO")
-                for event in turn["tool_events"]:
-                    with st.expander(f"🔧 {event['tool']} · mô phỏng"):
-                        st.markdown("**Arguments**")
-                        st.json(event["args"])
-                        st.markdown("**Kết quả / lỗi**")
-                        if event["result"].get("error"):
-                            st.error(event["result"]["message"])
-                        st.json(event["result"])
-
+        st.subheader("Chào bạn 👋")
+        st.write("Bạn cần hỗ trợ vấn đề gì hôm nay?")
+    for turn in session["turns"]:
+        render_turn(turn)
     prompt = st.chat_input("Nhập nội dung cần hỗ trợ…")
-
-    if prompt:
-        result = demo_response(prompt, scenario)
-        session["turns"].append({
-            "turn_index": len(session["turns"]) + 1,
-            "timestamp": datetime.now().isoformat(timespec="seconds"),
-            "user": prompt,
-            "demo_scenario": scenario,
-            **result,
-        })
+    if prompt and prompt.strip():
+        with st.spinner("Đang xử lý…"):
+            submit_turn(session, prompt.strip(), scenario=scenario, transcript_path=path)
         st.rerun()
-
+    if session.get("save_error"):
+        st.error(f"Chưa lưu được transcript: {session['save_error']}. Hãy tải bản trong phiên ở thanh bên.")
     with st.sidebar:
-        st.divider()
+        st.caption(f"Phiên: {session['transcript_id'][-8:]}")
         st.download_button(
-            "↓ Tải transcript demo",
-            data=json.dumps(session, ensure_ascii=False, indent=2),
-            file_name=f"demo_{session['session_id'][:8]}.json",
-            mime="application/json",
-            disabled=not session["turns"],
-            use_container_width=True,
+            f"↓ Tải transcript {mode_label}", data=json_text(session), file_name=path.name,
+            mime="application/json", disabled=not session["turns"], use_container_width=True,
         )
+
 
 if __name__ == "__main__":
     import sys

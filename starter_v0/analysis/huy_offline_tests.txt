@@ -1,0 +1,21 @@
+test_actual_read_tool_and_raw_reply (test_chat.ChatTests.test_actual_read_tool_and_raw_reply) ... ok
+test_artifact_change_stops_before_provider (test_chat.ChatTests.test_artifact_change_stops_before_provider) ... ok
+test_clarification_context_and_cancel (test_chat.ChatTests.test_clarification_context_and_cancel) ... ok
+test_demo_is_separate_no_provider (test_chat.ChatTests.test_demo_is_separate_no_provider) ... ok
+test_duplicate_submission_and_repeated_write (test_chat.ChatTests.test_duplicate_submission_and_repeated_write) ... ok
+test_error_preserves_executed_trace_and_context (test_chat.ChatTests.test_error_preserves_executed_trace_and_context) ... ok
+test_error_redaction (test_chat.ChatTests.test_error_redaction) ... ok
+test_gemini_env_model_matches_transcript (test_chat.ChatTests.test_gemini_env_model_matches_transcript) ... ok
+test_interruption_is_persisted_without_replay (test_chat.ChatTests.test_interruption_is_persisted_without_replay) ... ok
+test_mock_confirmation_uses_real_local_ticket_tool (test_chat.ChatTests.test_mock_confirmation_uses_real_local_ticket_tool) ... ok
+test_save_error_keeps_downloadable_session (test_chat.ChatTests.test_save_error_keeps_downloadable_session) ... ok
+test_textual_tool_calls_are_never_executed (test_chat.ChatTests.test_textual_tool_calls_are_never_executed) ... ok
+test_tool_failure_and_limit (test_chat.ChatTests.test_tool_failure_and_limit) ... ok
+test_unknown_tool (test_chat.ChatTests.test_unknown_tool) ... ok
+test_ui_scenarios_session_isolation_and_no_rerun_call (test_chat.UITests.test_ui_scenarios_session_isolation_and_no_rerun_call) ... 2026-09-16 01:21:56.628 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+
+----------------------------------------------------------------------
+Ran 15 tests in 0.662s
+
+OK
