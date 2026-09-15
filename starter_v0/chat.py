@@ -68,12 +68,17 @@ def tool_results_message(events: list[dict[str, Any]]) -> dict[str, str]:
     }
 
 
-def assistant_tool_message(response_text: str | None, calls: list[ToolCall]) -> dict[str, str]:
-    call_summary = [{"name": call.name, "args": call.args} for call in calls]
-    content = response_text or "I will call the selected tool(s)."
+def assistant_tool_message(
+    response_text: str | None,
+    calls: list[ToolCall],
+) -> dict[str, str]:
+    tool_names = ", ".join(call.name for call in calls)
     return {
         "role": "assistant",
-        "content": f"{content}\n\nTOOL_CALLS_JSON:\n{json_text(call_summary)}",
+        "content": (
+            f"I requested these tools: {tool_names}. "
+            "Their execution results follow."
+        ),
     }
 
 
@@ -112,8 +117,9 @@ def run_model_tool_loop(
         non_clarification_events: list[dict[str, Any]] = []
 
         for call in calls:
-            print(f"[tool] {call.name}({json.dumps(call.args, ensure_ascii=True, sort_keys=True)})")
+            print(f"[tool] {call.name}({json.dumps(call.args, ensure_ascii=False, sort_keys=True)})")
             event = execute_tool_call(call)
+            print(f"[result] {json_text(event['result'])}")
             round_record["tool_results"].append(event)
             all_tool_events.append(event)
 
