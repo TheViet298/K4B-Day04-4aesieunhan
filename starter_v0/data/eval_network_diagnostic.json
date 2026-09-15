@@ -1,0 +1,304 @@
+{
+  "dataset_id": "day04_v3_helpdesk_network_diagnostic_group",
+  "dataset_role": "group",
+  "description": "Team-authored IT helpdesk evaluation suite specifically testing network_diagnostic tool covering ping, DNS, port reachability, traceroute, multi-turn corrections, ambiguity handling, and cancellations.",
+  "allowed_failure_types": [
+    "wrong_tool",
+    "wrong_arg_value",
+    "wrong_boundary",
+    "unnecessary_tool",
+    "out_of_scope",
+    "missing_info"
+  ],
+  "cases": [
+    {
+      "id": "ND01_single_turn_ping_gateway",
+      "phase": "B",
+      "suite": "group",
+      "query": "Thực hiện ping kiểm tra độ trễ và tỷ lệ mất gói đến địa chỉ gateway nội bộ 10.0.0.1 giúp tôi.",
+      "failure_type": "wrong_arg_value",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "network_diagnostic",
+            "args": {
+              "target": "10.0.0.1",
+              "test_type": "ping"
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "network_ping_test",
+        "difficulty": "easy",
+        "what_it_tests": "Gọi tool network_diagnostic với target=10.0.0.1 và test_type=ping."
+      }
+    },
+    {
+      "id": "ND02_single_turn_dns_lookup",
+      "phase": "B",
+      "suite": "group",
+      "query": "Kiểm tra phân giải DNS cho tên miền máy chủ vpn.northstar.internal xem có phân giải đúng IP không.",
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "network_diagnostic",
+            "args": {
+              "target": "vpn.northstar.internal",
+              "test_type": "dns"
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "network_dns_lookup",
+        "difficulty": "medium",
+        "what_it_tests": "Gọi tool network_diagnostic với target=vpn.northstar.internal và test_type=dns thay vì check_service_status."
+      }
+    },
+    {
+      "id": "ND03_single_turn_port_check",
+      "phase": "B",
+      "suite": "group",
+      "query": "Kiểm tra xem cổng 443 trên máy chủ sso.northstar.internal có đang mở để tiếp nhận kết nối bảo mật không.",
+      "failure_type": "wrong_arg_value",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "network_diagnostic",
+            "args": {
+              "target": "sso.northstar.internal",
+              "test_type": "port",
+              "port": 443
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "network_port_check",
+        "difficulty": "medium",
+        "what_it_tests": "Gọi tool network_diagnostic với test_type=port và port=443."
+      }
+    },
+    {
+      "id": "ND04_single_turn_missing_target_clarify",
+      "phase": "B",
+      "suite": "group",
+      "query": "Hãy chạy chẩn đoán kiểm tra mạng ngay cho tôi.",
+      "failure_type": "missing_info",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "clarify",
+            "args": {
+              "response_type": "text"
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "network_diagnostic_missing_target",
+        "difficulty": "medium",
+        "what_it_tests": "Khi người dùng yêu cầu chẩn đoán mạng nhưng không cung cấp IP, domain hay asset_id, agent phải gọi clarify để hỏi thông tin."
+      }
+    },
+    {
+      "id": "ND05_single_turn_traceroute",
+      "phase": "B",
+      "suite": "group",
+      "query": "Thực hiện traceroute để kiểm tra các bước nhảy kết nối (hops) đến máy chủ mail.northstar.internal.",
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "network_diagnostic",
+            "args": {
+              "target": "mail.northstar.internal",
+              "test_type": "traceroute"
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "network_traceroute",
+        "difficulty": "medium",
+        "what_it_tests": "Gọi đúng tool network_diagnostic với test_type=traceroute."
+      }
+    },
+    {
+      "id": "ND06_multiturn_target_ip_correction",
+      "phase": "B",
+      "suite": "group",
+      "turns": [
+        {
+          "role": "user",
+          "content": "Ping thử địa chỉ IP 192.168.1.100 giúp tôi."
+        },
+        {
+          "role": "user",
+          "content": "Tôi gõ nhầm địa chỉ, IP đúng là 192.168.1.1."
+        },
+        {
+          "role": "user",
+          "content": "Hãy thực hiện ping đến đúng địa chỉ 192.168.1.1 đó."
+        }
+      ],
+      "failure_type": "wrong_arg_value",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "network_diagnostic",
+            "args": {
+              "target": "192.168.1.1",
+              "test_type": "ping"
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "multiturn_target_ip_correction",
+        "difficulty": "medium",
+        "what_it_tests": "Cập nhật IP chính xác 192.168.1.1 sau khi người dùng đính chính ở lượt sau."
+      }
+    },
+    {
+      "id": "ND07_multiturn_intent_switch_to_diagnostic",
+      "phase": "B",
+      "suite": "group",
+      "turns": [
+        {
+          "role": "user",
+          "content": "Tìm tài liệu hướng dẫn khắc phục sự cố DNS trên máy trạm."
+        },
+        {
+          "role": "user",
+          "content": "Không cần tìm tài liệu nữa, kiểm tra trực tiếp DNS resolution tới dns.northstar.internal."
+        },
+        {
+          "role": "user",
+          "content": "Hãy chạy kiểm tra DNS tới dns.northstar.internal ngay."
+        }
+      ],
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "network_diagnostic",
+            "args": {
+              "target": "dns.northstar.internal",
+              "test_type": "dns"
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "multiturn_intent_switch_diagnostic",
+        "difficulty": "hard",
+        "what_it_tests": "Chuyển ý định từ tìm kiếm KB sang kiểm tra phân giải DNS cụ thể."
+      }
+    },
+    {
+      "id": "ND08_multiturn_cancellation",
+      "phase": "B",
+      "suite": "group",
+      "turns": [
+        {
+          "role": "user",
+          "content": "Chạy kiểm tra toàn diện full diagnostic kết nối tới 8.8.8.8."
+        },
+        {
+          "role": "user",
+          "content": "Đường truyền văn phòng ổn định trở lại rồi, hủy kiểm tra này nhé."
+        },
+        {
+          "role": "user",
+          "content": "Hủy toàn bộ yêu cầu chẩn đoán mạng vừa rồi, không thực hiện hành động nào."
+        }
+      ],
+      "failure_type": "unnecessary_tool",
+      "expect": {
+        "no_tool": true,
+        "behavior": "answer_without_tool"
+      },
+      "metadata": {
+        "skill": "multiturn_diagnostic_cancellation",
+        "difficulty": "hard",
+        "what_it_tests": "Khi người dùng yêu cầu hủy bỏ kiểm tra mạng ở lượt sau thì Agent không được gọi tool."
+      }
+    },
+    {
+      "id": "ND09_multiturn_switch_test_type_port",
+      "phase": "B",
+      "suite": "group",
+      "turns": [
+        {
+          "role": "user",
+          "content": "Ping thử máy chủ backup.northstar.internal."
+        },
+        {
+          "role": "user",
+          "content": "Đổi lại giúp tôi: kiểm tra xem cổng 22 (SSH) trên backup.northstar.internal có mở không thay vì ping."
+        },
+        {
+          "role": "user",
+          "content": "Thực hiện kiểm tra cổng 22 trên backup.northstar.internal."
+        }
+      ],
+      "failure_type": "wrong_arg_value",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "network_diagnostic",
+            "args": {
+              "target": "backup.northstar.internal",
+              "test_type": "port",
+              "port": 22
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "multiturn_switch_test_type",
+        "difficulty": "hard",
+        "what_it_tests": "Chuyển từ kiểm tra ping sang kiểm tra cổng SSH (port 22) trên máy chủ đích."
+      }
+    },
+    {
+      "id": "ND10_multiturn_diagnostic_then_confirmed_ticket",
+      "phase": "B",
+      "suite": "group",
+      "turns": [
+        {
+          "role": "user",
+          "content": "Kiểm tra chẩn đoán mạng cho máy in tầng 4 printer-floor4.northstar.internal."
+        },
+        {
+          "role": "user",
+          "content": "Kết quả mất gói 100% không thể kết nối. Tôi xác nhận tạo ticket: Máy in tầng 4 mất kết nối mạng hoàn toàn, priority high."
+        },
+        {
+          "role": "user",
+          "content": "Tôi đã kiểm tra kỹ và xác nhận tạo ticket này ngay."
+        }
+      ],
+      "failure_type": "wrong_boundary",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "create_ticket",
+            "args": {
+              "priority": "high",
+              "confirmed": true
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "diagnostic_then_confirmed_ticket",
+        "difficulty": "hard",
+        "what_it_tests": "Sau khi chẩn đoán mạng phát hiện sự cố, người dùng xác nhận tạo ticket thì agent gọi create_ticket với confirmed=True."
+      }
+    }
+  ]
+}

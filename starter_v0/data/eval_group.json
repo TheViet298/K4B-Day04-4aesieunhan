@@ -1,7 +1,296 @@
 {
   "dataset_id": "day04_v3_helpdesk_group",
   "dataset_role": "group",
-  "description": "Template intentionally left empty. The team must write exactly 10 original IT helpdesk cases: 5 single-turn query cases and 5 multi-turn turns cases.",
-  "allowed_failure_types": ["wrong_tool", "wrong_arg_value", "wrong_boundary", "unnecessary_tool", "out_of_scope", "missing_info"],
-  "cases": []
+  "description": "Team-authored IT helpdesk evaluation suite covering ambiguous intent, device correction/decision change, action cancellation, and policy retrieval with confirmed ticket creation.",
+  "allowed_failure_types": [
+    "wrong_tool",
+    "wrong_arg_value",
+    "wrong_boundary",
+    "unnecessary_tool",
+    "out_of_scope",
+    "missing_info"
+  ],
+  "cases": [
+    {
+      "id": "G01_ambiguous_service_intent",
+      "phase": "B",
+      "suite": "group",
+      "query": "Mạng văn phòng hôm nay rất chập chờn, kiểm tra giúp tôi xem hạ tầng Wi-Fi hay đường truyền VPN đang gặp sự cố.",
+      "failure_type": "missing_info",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "clarify",
+            "args": {
+              "response_type": "choice",
+              "options": ["wifi", "vpn"]
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "clarify_ambiguous_service",
+        "difficulty": "medium",
+        "what_it_tests": "Ý định mơ hồ giữa hai dịch vụ Wi-Fi và VPN buộc Agent phải hỏi lựa chọn cụ thể."
+      }
+    },
+    {
+      "id": "G02_single_turn_cancellation",
+      "phase": "B",
+      "suite": "group",
+      "query": "Tôi vừa định nhờ kiểm tra tài khoản EMP-1015 nhưng đồng nghiệp đã xử lý xong rồi, hủy yêu cầu này nhé, không cần tra cứu nữa.",
+      "failure_type": "unnecessary_tool",
+      "expect": {
+        "no_tool": true,
+        "behavior": "answer_without_tool"
+      },
+      "metadata": {
+        "skill": "single_turn_cancellation",
+        "difficulty": "easy",
+        "what_it_tests": "Người dùng chủ động hủy yêu cầu ngay trong lượt hỏi thì Agent không được gọi tool."
+      }
+    },
+    {
+      "id": "G03_policy_external_ai_tools",
+      "phase": "B",
+      "suite": "group",
+      "query": "Quy định IT của Northstar Labs về việc sử dụng các công cụ AI bên ngoài cho công việc nội bộ như thế nào?",
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "policy",
+            "args": {
+              "policy_area": "external_tools"
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "external_tools_policy",
+        "difficulty": "medium",
+        "what_it_tests": "Tra cứu chính sách sử dụng công cụ bên ngoài route vào policy external_tools."
+      }
+    },
+    {
+      "id": "G04_inspect_device_hardware",
+      "phase": "B",
+      "suite": "group",
+      "query": "Kiểm tra tình trạng phần cứng máy tính để bàn DT-505 giúp tôi.",
+      "failure_type": "wrong_arg_value",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "inspect_device",
+            "args": {
+              "asset_id": "DT-505",
+              "check": "hardware"
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "device_hardware_check",
+        "difficulty": "medium",
+        "what_it_tests": "Trích xuất đúng asset_id DT-505 và check=hardware."
+      }
+    },
+    {
+      "id": "G05_service_status_sso_staging",
+      "phase": "B",
+      "suite": "group",
+      "query": "Kiểm tra xem dịch vụ đăng nhập tập trung SSO trên môi trường staging hiện tại có hoạt động bình thường không.",
+      "failure_type": "wrong_arg_value",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "check_service_status",
+            "args": {
+              "service": "sso",
+              "environment": "staging"
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "sso_status_staging",
+        "difficulty": "medium",
+        "what_it_tests": "Kiểm tra dịch vụ SSO đúng môi trường staging không bị mặc định về production."
+      }
+    },
+    {
+      "id": "G06_multiturn_device_correction",
+      "phase": "B",
+      "suite": "group",
+      "turns": [
+        {
+          "role": "user",
+          "content": "Kiểm tra kết nối mạng của máy bàn DT-108."
+        },
+        {
+          "role": "user",
+          "content": "À xin lỗi, tôi nhìn nhầm tem máy, mã chính xác là DT-205."
+        },
+        {
+          "role": "user",
+          "content": "Hãy thực hiện kiểm tra network trên đúng máy DT-205 đó."
+        }
+      ],
+      "failure_type": "wrong_arg_value",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "inspect_device",
+            "args": {
+              "asset_id": "DT-205",
+              "check": "network"
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "multiturn_device_correction",
+        "difficulty": "medium",
+        "what_it_tests": "Đính chính asset_id từ DT-108 sang DT-205 ở lượt sau và thực hiện đúng check network."
+      }
+    },
+    {
+      "id": "G07_multiturn_decision_change",
+      "phase": "B",
+      "suite": "group",
+      "turns": [
+        {
+          "role": "user",
+          "content": "Tìm tài liệu hướng dẫn khắc phục sự cố máy in văn phòng."
+        },
+        {
+          "role": "user",
+          "content": "Thôi không cần đọc hướng dẫn nữa, kiểm tra trực tiếp xem dịch vụ printing production có đang bị gián đoạn không."
+        },
+        {
+          "role": "user",
+          "content": "Chỉ kiểm tra trạng thái dịch vụ printing trên production."
+        }
+      ],
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "check_service_status",
+            "args": {
+              "service": "printing",
+              "environment": "production"
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "multiturn_intent_switch",
+        "difficulty": "hard",
+        "what_it_tests": "Thay đổi quyết định từ tra cứu KB sang kiểm tra trạng thái dịch vụ printing production."
+      }
+    },
+    {
+      "id": "G08_multiturn_cancellation",
+      "phase": "B",
+      "suite": "group",
+      "turns": [
+        {
+          "role": "user",
+          "content": "Tạo giúp tôi ticket sửa lỗi sọc màn hình laptop LT-409 mức medium."
+        },
+        {
+          "role": "user",
+          "content": "Tôi vừa cắm lại cáp màn hình thì bình thường rồi, không cần tạo ticket nữa."
+        },
+        {
+          "role": "user",
+          "content": "Hủy toàn bộ yêu cầu tạo ticket trước đó, không thực hiện hành động nào."
+        }
+      ],
+      "failure_type": "unnecessary_tool",
+      "expect": {
+        "no_tool": true,
+        "behavior": "answer_without_tool"
+      },
+      "metadata": {
+        "skill": "multiturn_action_cancellation",
+        "difficulty": "hard",
+        "what_it_tests": "Yêu cầu hủy bỏ hành động ở lượt sau thì Agent không được gọi create_ticket hay clarify."
+      }
+    },
+    {
+      "id": "G09_policy_then_confirmed_ticket",
+      "phase": "B",
+      "suite": "group",
+      "turns": [
+        {
+          "role": "user",
+          "content": "Tra cứu quy định ticketing của công ty về việc tạo ticket ưu tiên critical khi hệ thống dừng hoạt động."
+        },
+        {
+          "role": "user",
+          "content": "Sau khi đọc quy định, tôi xác nhận tạo ticket: Hệ thống SSO ngừng hoạt động trên toàn công ty, priority critical."
+        },
+        {
+          "role": "user",
+          "content": "Tôi đã kiểm tra kỹ và xác nhận tạo ticket này ngay."
+        }
+      ],
+      "failure_type": "wrong_boundary",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "create_ticket",
+            "args": {
+              "priority": "critical",
+              "confirmed": true
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "policy_then_confirmed_ticket",
+        "difficulty": "hard",
+        "what_it_tests": "Tra cứu chính sách IT kết hợp yêu cầu tạo ticket sau khi đã xác nhận rõ ràng."
+      }
+    },
+    {
+      "id": "G10_multiturn_ambiguous_clarify_then_confirm_ticket",
+      "phase": "B",
+      "suite": "group",
+      "turns": [
+        {
+          "role": "user",
+          "content": "Máy tính của tôi có dấu hiệu bị nhiễm mã độc, tôi cần IT tạo ticket xử lý gấp."
+        },
+        {
+          "role": "user",
+          "content": "Mã máy của tôi là LT-550, mức độ ưu tiên là high."
+        },
+        {
+          "role": "user",
+          "content": "Tôi xác nhận tạo ticket: Nghi ngờ nhiễm mã độc trên LT-550 mức priority high."
+        }
+      ],
+      "failure_type": "wrong_boundary",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "create_ticket",
+            "args": {
+              "asset_id": "LT-550",
+              "priority": "high",
+              "confirmed": true
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "multiturn_clarify_and_confirmed_ticket",
+        "difficulty": "hard",
+        "what_it_tests": "Bổ sung thông tin còn thiếu từ lượt trước và xác nhận tạo ticket đầy đủ tham số."
+      }
+    }
+  ]
 }
