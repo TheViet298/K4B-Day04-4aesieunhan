@@ -14,17 +14,17 @@
 
 | Họ và tên | MSSV | GitHub | Vai trò và công việc | File/commit/PR |
 |---|---|---|---|---|
-| Ngô Thế Việt | 2A202602594 | TheViet298 | Leader & Prompt Engineering Lead: Quản lý repo, tinh chỉnh `system_prompt.md` & `tools.yaml` (v0-v3), chạy eval, ghi `version_log.csv`, tổng hợp `REPORT.md`. | |
-| Nguyễn Quang Đạo | 2A202602394 | https://github.com/nguyenquangdao2004-glitch | Tool Registry & Safety/Adversarial Lead: Xây dựng tool schemas trong `tools/`, kiểm thử 12 case an toàn/adversarial, phân tích ranh giới an toàn & confirmation guardrails. | |
-| Gia Huy | 2A202602705 | https://github.com/jerrygiahuy | UI & Live Chat Trace Developer: Phụ trách `chat.py`/UI hiển thị tool call/input/kết quả/phiên bản, thực thi và xuất `transcripts/` minh chứng. | |
-| Nguyễn Văn Giáp | 2A202602903 | https://github.com/Giappp | Eval Benchmark & Bonus Lead: Soạn 10 case nhóm (`eval_group.json`), nghiên cứu & phát triển chức năng mở rộng Bonus Feature, đánh giá metric. | |
+| Ngô Thế Việt | 2A202602594 | TheViet298 | Leader & Prompt Engineering Lead: Quản lý repo, tinh chỉnh `system_prompt.md` & `tools.yaml` (v0-v3), chạy eval, ghi `version_log.csv`, tổng hợp `REPORT.md`. | Commit dff0b50 (Prompt v1 & version_log) |
+| Nguyễn Quang Đạo | 2A202602394 | https://github.com/nguyenquangdao2004-glitch | Tool Registry & Safety/Adversarial Lead: Xây dựng tool schemas trong `tools/`, kiểm thử 12 case an toàn/adversarial, phân tích ranh giới an toàn & confirmation guardrails. | Commit 5e9d842 |
+| Trần Vũ Gia Huy | 2A202602705 | https://github.com/jerrygiahuy | UI & Live Chat Trace Developer: Phụ trách `chat.py`/UI hiển thị tool call/input/kết quả/phiên bản, thực thi và xuất `transcripts/` minh chứng. | Commit d74a889 (tool trace và transcript); fdc0624 (INDIVIDUAL và MSSV) |
+| Nguyễn Văn Giáp | 2A202602903 | https://github.com/Giappp | Eval Benchmark & Bonus Lead: Soạn 10 case nhóm (`eval_group.json`), nghiên cứu & phát triển chức năng mở rộng Bonus Feature (`network_diagnostic`), đánh giá metric. | Commit be1079b |
 
 ## Nhận xét chung
 
-- Kết quả và bằng chứng:
-- Thay đổi hiệu quả nhất:
-- Giới hạn còn lại:
-- Cách phân công và tích hợp:
+- Kết quả và bằng chứng: Toàn bộ quy trình v0-v3 đã được kiểm thử với 100% test cases cơ bản và 100% test cases an toàn (Adversarial) đạt PASS. Bộ 10 test case nhóm và Bonus feature `network_diagnostic` đã hoàn thiện kèm dữ liệu kiểm thử.
+- Thay đổi hiệu quả nhất: Chuẩn hóa quy tắc `clarify` khi thiếu thông tin, cơ chế confirmation bắt buộc trước khi tạo ticket, và xây dựng tool schema chặt chẽ trong `tools.yaml`.
+- Giới hạn còn lại: Khả năng phản hồi đa ngôn ngữ nâng cao và xử lý các kịch bản network phức tạp hơn cần thêm dữ liệu chuyên sâu.
+- Cách phân công và tích hợp: Trưởng nhóm điều phối repo và prompt, các thành viên đảm nhận Tool Registry & Safety, UI Trace, Eval Benchmark & Bonus Tool.
 
 ## INDIVIDUAL
 
@@ -40,10 +40,19 @@ Sao chép mục này cho từng thành viên. Mỗi thành viên tự viết và
 
 ### Nguyễn Quang Đạo — 2A202602394
 
-- Phần việc và file/commit/PR: Khai báo tool schemas trong tools.yaml và tools/, thực hiện kiểm thử 12 case adversarial/safety, phân tích lỗi an toàn và cơ chế xác nhận.
+- Phần việc và file/commit/PR:
+  - Khai báo và chuẩn hóa toàn bộ Tool Schemas trong `starter_v0/artifacts/tools.yaml` (thiết lập ranh giới an toàn cho `create_ticket`, `clarify`, `search_device_info`).
+  - Thực thi kiểm thử bộ 12 test case an toàn (`data/eval_adversarial.json`) với run evidence: `runs/v2_B_adversarial_gemini_20260915T204457659016.json`.
+  - Phân tích chi tiết 3 trường hợp tấn công (A04 Argument Smuggling, A06 Internal Data Exfiltration, A10 Stale Confirmation Attack) và hoàn thiện mục B4a & B6 (Safety Review) trong `REPORT.md`.
 - Quyết định, khó khăn và cách xử lý:
+  - Khó khăn: Ở bản gốc v0, Agent thường xuyên tự ý gọi `create_ticket` mà không hỏi xác nhận người dùng, và khi gặp rate limit HTTP 429 từ provider thì script bị dừng ngang làm fail 13 cases.
+  - Quyết định xử lý: Bổ sung cơ chế auto-retry backoff trong adapter provider; đồng thời chuẩn hóa rõ mô tả `clarify` (3 mode: text, yes_no, choice) và siết chặt ranh giới `create_ticket` trong `tools.yaml` để giải quyết dứt điểm các lỗi missing_info và wrong_boundary.
 - Điều đã học:
+  - Hiểu sâu sắc cơ chế Tool Calling / Function Calling của LLM: Mô hình ra quyết định gọi tool phụ thuộc rất lớn vào mô tả ngữ nghĩa (semantic description) và kiểu dữ liệu (enum, schema).
+  - Nắm vững các kỹ thuật tấn công prompt phổ biến (Argument Smuggling qua pseudo-code, Stale Confirmation, Retrieval Injection) và sự cần thiết của việc xây dựng guardrail đa tầng (tầng prompt + tầng code deterministic).
 - AI/công cụ đã dùng và cách kiểm tra:
+  - Sử dụng Antigravity Coding Assistant để hỗ trợ phân tích code, tối ưu YAML schema và rà soát failure trace.
+  - Kiểm chứng 100% bằng việc chạy eval thực tế qua script `run_eval.py` và kiểm tra filesystem (`tickets/`).
 - Thời điểm đã tự nộp URL repo chung trên VLearn:
 
 ### Gia Huy — 2A202602705
@@ -60,8 +69,8 @@ Sao chép mục này cho từng thành viên. Mỗi thành viên tự viết và
 
 ### Nguyễn Văn Giáp — 2A202602903
 
-- Phần việc và file/commit/PR: Xây dựng bộ 10 test case nhóm (eval_group.json), nghiên cứu và triển khai 01 chức năng mở rộng Bonus Feature, kiểm thử chỉ số metric.
-- Quyết định, khó khăn và cách xử lý:
-- Điều đã học:
-- AI/công cụ đã dùng và cách kiểm tra:
-- Thời điểm đã tự nộp URL repo chung trên VLearn:
+- Phần việc và file/commit/PR: Xây dựng bộ 10 test case nhóm (eval_group.json), nghiên cứu và triển khai 01 chức năng network_diagnostic - kèm thêm bộ dữ liệu kiểm thử (eval_network_diagnostic.json), kiểm thử chỉ số metric.
+- Quyết định, khó khăn và cách xử lý: Gặp khó khăn khi viết tool và tạo bộ dữ liệu để kiểm thử tool vừa tạo, xử lý bằng cách sử dụng AI generate ra template mẫu -> dựa vào đó chỉnh sửa để cover hết các edge case.
+- Điều đã học: Hiểu về Prompt Engineering có tác động như thế nào tới việc model xử lý thông tin và gọi tool - chỉ cần thay đổi 1 đoạn prompt cũng có thể ngăn chặn cơ số các prompt injection.
+- AI/công cụ đã dùng và cách kiểm tra: Antigravity
+- Thời điểm đã tự nộp URL repo chung trên VLearn: 15/09/2026

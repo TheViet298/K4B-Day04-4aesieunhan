@@ -1,0 +1,731 @@
+{
+  "run_id": "v3_B_extension_openrouter_20260916T003050595425",
+  "version": "v3",
+  "artifact_version": "v3+p5acbae7cbcb2+t17ea562ed15f",
+  "prompt_hash": "5acbae7cbcb2e252f8c9f51bbb2251cb14657098290ba43665b93aa7a8e4ff07",
+  "tools_hash": "17ea562ed15f462f0aae9abc8972e0029388dbd75d7a5f3c4b8b2d71ceb49daf",
+  "phase": "B",
+  "suite": "extension",
+  "provider": "openrouter",
+  "model": "openai/gpt-4o-mini",
+  "system_prompt": "D:\\Vin_AI\\K4-L3B-Day04-Prompt-Engineering-Tool-Calling-Labs\\starter_v0\\artifacts\\system_prompt.md",
+  "tools": "D:\\Vin_AI\\K4-L3B-Day04-Prompt-Engineering-Tool-Calling-Labs\\starter_v0\\artifacts\\tools.yaml",
+  "eval_cases": "data\\eval_network_diagnostic.json",
+  "dataset_id": "day04_v3_helpdesk_network_diagnostic_group",
+  "dataset_role": "group",
+  "description": "Team-authored IT helpdesk evaluation suite specifically testing network_diagnostic tool covering ping, DNS, port reachability, traceroute, multi-turn corrections, ambiguity handling, and cancellations.",
+  "generated_at": "2026-09-16T00:30:50",
+  "summary": {
+    "total_cases": 10,
+    "measured_cases": 10,
+    "provider_error_cases": 0,
+    "passed_cases": 9,
+    "case_accuracy": 0.9,
+    "tool_routing_accuracy": 0.9,
+    "argument_accuracy": 0.9,
+    "multiturn_accuracy": 0.8,
+    "failure_counts": {
+      "wrong_boundary": 1
+    },
+    "observed_mismatch_counts": {
+      "missing_tool_call": 1
+    }
+  },
+  "results": [
+    {
+      "id": "ND01_single_turn_ping_gateway",
+      "phase": "B",
+      "suite": "extension",
+      "case_suite": "group",
+      "is_multiturn": false,
+      "metadata": {
+        "skill": "network_ping_test",
+        "difficulty": "easy",
+        "what_it_tests": "Gọi tool network_diagnostic với target=10.0.0.1 và test_type=ping."
+      },
+      "input": "Thực hiện ping kiểm tra độ trễ và tỷ lệ mất gói đến địa chỉ gateway nội bộ 10.0.0.1 giúp tôi.",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "network_diagnostic",
+            "args": {
+              "target": "10.0.0.1",
+              "test_type": "ping"
+            }
+          }
+        ]
+      },
+      "result": {
+        "passed": true,
+        "routing_correct": true,
+        "args_correct": true,
+        "actual_tool_calls": [
+          {
+            "name": "network_diagnostic",
+            "args": {
+              "target": "10.0.0.1",
+              "test_type": "ping"
+            }
+          }
+        ],
+        "actual_text": null,
+        "case_failure_type": "wrong_arg_value",
+        "observed_mismatch": null,
+        "failure_type": null,
+        "failures": []
+      },
+      "tool_results": [
+        {
+          "tool": "network_diagnostic",
+          "args": {
+            "target": "10.0.0.1",
+            "test_type": "ping"
+          },
+          "result": {
+            "tool": "network_diagnostic",
+            "target": "10.0.0.1",
+            "target_ip": "10.0.0.1",
+            "test_type": "ping",
+            "status": "healthy",
+            "timestamp": "2026-09-15T17:30:16.450782+00:00",
+            "ping_results": {
+              "packets_transmitted": 3,
+              "packets_received": 3,
+              "packet_loss_pct": 0.0,
+              "avg_latency_ms": 2.1,
+              "min_latency_ms": 1.78,
+              "max_latency_ms": 2.62,
+              "reachable": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "ND02_single_turn_dns_lookup",
+      "phase": "B",
+      "suite": "extension",
+      "case_suite": "group",
+      "is_multiturn": false,
+      "metadata": {
+        "skill": "network_dns_lookup",
+        "difficulty": "medium",
+        "what_it_tests": "Gọi tool network_diagnostic với target=vpn.northstar.internal và test_type=dns thay vì check_service_status."
+      },
+      "input": "Kiểm tra phân giải DNS cho tên miền máy chủ vpn.northstar.internal xem có phân giải đúng IP không.",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "network_diagnostic",
+            "args": {
+              "target": "vpn.northstar.internal",
+              "test_type": "dns"
+            }
+          }
+        ]
+      },
+      "result": {
+        "passed": true,
+        "routing_correct": true,
+        "args_correct": true,
+        "actual_tool_calls": [
+          {
+            "name": "network_diagnostic",
+            "args": {
+              "target": "vpn.northstar.internal",
+              "test_type": "dns"
+            }
+          }
+        ],
+        "actual_text": null,
+        "case_failure_type": "wrong_tool",
+        "observed_mismatch": null,
+        "failure_type": null,
+        "failures": []
+      },
+      "tool_results": [
+        {
+          "tool": "network_diagnostic",
+          "args": {
+            "target": "vpn.northstar.internal",
+            "test_type": "dns"
+          },
+          "result": {
+            "tool": "network_diagnostic",
+            "target": "vpn.northstar.internal",
+            "target_ip": "10.0.1.20",
+            "test_type": "dns",
+            "status": "healthy",
+            "timestamp": "2026-09-15T17:30:21.500082+00:00",
+            "dns_lookup": {
+              "query": "vpn.northstar.internal",
+              "resolved_ip": "10.0.1.20",
+              "authoritative_dns": "10.0.0.2 (dns.northstar.internal)",
+              "dns_status": "NOERROR"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "ND03_single_turn_port_check",
+      "phase": "B",
+      "suite": "extension",
+      "case_suite": "group",
+      "is_multiturn": false,
+      "metadata": {
+        "skill": "network_port_check",
+        "difficulty": "medium",
+        "what_it_tests": "Gọi tool network_diagnostic với test_type=port và port=443."
+      },
+      "input": "Kiểm tra xem cổng 443 trên máy chủ sso.northstar.internal có đang mở để tiếp nhận kết nối bảo mật không.",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "network_diagnostic",
+            "args": {
+              "target": "sso.northstar.internal",
+              "test_type": "port",
+              "port": 443
+            }
+          }
+        ]
+      },
+      "result": {
+        "passed": true,
+        "routing_correct": true,
+        "args_correct": true,
+        "actual_tool_calls": [
+          {
+            "name": "network_diagnostic",
+            "args": {
+              "target": "sso.northstar.internal",
+              "test_type": "port",
+              "port": 443
+            }
+          }
+        ],
+        "actual_text": null,
+        "case_failure_type": "wrong_arg_value",
+        "observed_mismatch": null,
+        "failure_type": null,
+        "failures": []
+      },
+      "tool_results": [
+        {
+          "tool": "network_diagnostic",
+          "args": {
+            "target": "sso.northstar.internal",
+            "test_type": "port",
+            "port": 443
+          },
+          "result": {
+            "tool": "network_diagnostic",
+            "target": "sso.northstar.internal",
+            "target_ip": "10.0.1.10",
+            "test_type": "port",
+            "status": "healthy",
+            "timestamp": "2026-09-15T17:30:22.756069+00:00",
+            "port_check": {
+              "port": 443,
+              "status": "OPEN",
+              "open_ports_detected": [
+                80,
+                443
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "ND04_single_turn_missing_target_clarify",
+      "phase": "B",
+      "suite": "extension",
+      "case_suite": "group",
+      "is_multiturn": false,
+      "metadata": {
+        "skill": "network_diagnostic_missing_target",
+        "difficulty": "medium",
+        "what_it_tests": "Khi người dùng yêu cầu chẩn đoán mạng nhưng không cung cấp IP, domain hay asset_id, agent phải gọi clarify để hỏi thông tin."
+      },
+      "input": "Hãy chạy chẩn đoán kiểm tra mạng ngay cho tôi.",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "clarify",
+            "args": {
+              "response_type": "text"
+            }
+          }
+        ]
+      },
+      "result": {
+        "passed": true,
+        "routing_correct": true,
+        "args_correct": true,
+        "actual_tool_calls": [
+          {
+            "name": "clarify",
+            "args": {
+              "question": "Bạn vui lòng cung cấp địa chỉ IP, hostname, hoặc mã tài sản (asset_id) mà bạn muốn kiểm tra mạng?",
+              "response_type": "text"
+            }
+          }
+        ],
+        "actual_text": null,
+        "case_failure_type": "missing_info",
+        "observed_mismatch": null,
+        "failure_type": null,
+        "failures": []
+      },
+      "tool_results": [
+        {
+          "tool": "clarify",
+          "args": {
+            "question": "Bạn vui lòng cung cấp địa chỉ IP, hostname, hoặc mã tài sản (asset_id) mà bạn muốn kiểm tra mạng?",
+            "response_type": "text"
+          },
+          "result": {
+            "tool": "clarify",
+            "question": "Bạn vui lòng cung cấp địa chỉ IP, hostname, hoặc mã tài sản (asset_id) mà bạn muốn kiểm tra mạng?",
+            "response_type": "text",
+            "options": [],
+            "awaiting_user": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "ND05_single_turn_traceroute",
+      "phase": "B",
+      "suite": "extension",
+      "case_suite": "group",
+      "is_multiturn": false,
+      "metadata": {
+        "skill": "network_traceroute",
+        "difficulty": "medium",
+        "what_it_tests": "Gọi đúng tool network_diagnostic với test_type=traceroute."
+      },
+      "input": "Thực hiện traceroute để kiểm tra các bước nhảy kết nối (hops) đến máy chủ mail.northstar.internal.",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "network_diagnostic",
+            "args": {
+              "target": "mail.northstar.internal",
+              "test_type": "traceroute"
+            }
+          }
+        ]
+      },
+      "result": {
+        "passed": true,
+        "routing_correct": true,
+        "args_correct": true,
+        "actual_tool_calls": [
+          {
+            "name": "network_diagnostic",
+            "args": {
+              "target": "mail.northstar.internal",
+              "test_type": "traceroute"
+            }
+          }
+        ],
+        "actual_text": null,
+        "case_failure_type": "wrong_tool",
+        "observed_mismatch": null,
+        "failure_type": null,
+        "failures": []
+      },
+      "tool_results": [
+        {
+          "tool": "network_diagnostic",
+          "args": {
+            "target": "mail.northstar.internal",
+            "test_type": "traceroute"
+          },
+          "result": {
+            "tool": "network_diagnostic",
+            "target": "mail.northstar.internal",
+            "target_ip": "10.0.1.30",
+            "test_type": "traceroute",
+            "status": "healthy",
+            "timestamp": "2026-09-15T17:30:30.741989+00:00",
+            "traceroute": {
+              "hops": [
+                "10.0.0.1",
+                "10.0.1.1",
+                "10.0.1.30"
+              ],
+              "hop_count": 3,
+              "completed": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "ND06_multiturn_target_ip_correction",
+      "phase": "B",
+      "suite": "extension",
+      "case_suite": "group",
+      "is_multiturn": true,
+      "metadata": {
+        "skill": "multiturn_target_ip_correction",
+        "difficulty": "medium",
+        "what_it_tests": "Cập nhật IP chính xác 192.168.1.1 sau khi người dùng đính chính ở lượt sau."
+      },
+      "input": [
+        {
+          "role": "user",
+          "content": "Ping thử địa chỉ IP 192.168.1.100 giúp tôi."
+        },
+        {
+          "role": "user",
+          "content": "Tôi gõ nhầm địa chỉ, IP đúng là 192.168.1.1."
+        },
+        {
+          "role": "user",
+          "content": "Hãy thực hiện ping đến đúng địa chỉ 192.168.1.1 đó."
+        }
+      ],
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "network_diagnostic",
+            "args": {
+              "target": "192.168.1.1",
+              "test_type": "ping"
+            }
+          }
+        ]
+      },
+      "result": {
+        "passed": true,
+        "routing_correct": true,
+        "args_correct": true,
+        "actual_tool_calls": [
+          {
+            "name": "network_diagnostic",
+            "args": {
+              "target": "192.168.1.1",
+              "test_type": "ping"
+            }
+          }
+        ],
+        "actual_text": null,
+        "case_failure_type": "wrong_arg_value",
+        "observed_mismatch": null,
+        "failure_type": null,
+        "failures": []
+      },
+      "tool_results": [
+        {
+          "tool": "network_diagnostic",
+          "args": {
+            "target": "192.168.1.1",
+            "test_type": "ping"
+          },
+          "result": {
+            "tool": "network_diagnostic",
+            "target": "192.168.1.1",
+            "target_ip": "192.168.1.1",
+            "test_type": "ping",
+            "status": "healthy",
+            "timestamp": "2026-09-15T17:30:35.375759+00:00",
+            "ping_results": {
+              "packets_transmitted": 3,
+              "packets_received": 3,
+              "packet_loss_pct": 0.0,
+              "avg_latency_ms": 1.2,
+              "min_latency_ms": 1.02,
+              "max_latency_ms": 1.5,
+              "reachable": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "ND07_multiturn_intent_switch_to_diagnostic",
+      "phase": "B",
+      "suite": "extension",
+      "case_suite": "group",
+      "is_multiturn": true,
+      "metadata": {
+        "skill": "multiturn_intent_switch_diagnostic",
+        "difficulty": "hard",
+        "what_it_tests": "Chuyển ý định từ tìm kiếm KB sang kiểm tra phân giải DNS cụ thể."
+      },
+      "input": [
+        {
+          "role": "user",
+          "content": "Tìm tài liệu hướng dẫn khắc phục sự cố DNS trên máy trạm."
+        },
+        {
+          "role": "user",
+          "content": "Không cần tìm tài liệu nữa, kiểm tra trực tiếp DNS resolution tới dns.northstar.internal."
+        },
+        {
+          "role": "user",
+          "content": "Hãy chạy kiểm tra DNS tới dns.northstar.internal ngay."
+        }
+      ],
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "network_diagnostic",
+            "args": {
+              "target": "dns.northstar.internal",
+              "test_type": "dns"
+            }
+          }
+        ]
+      },
+      "result": {
+        "passed": true,
+        "routing_correct": true,
+        "args_correct": true,
+        "actual_tool_calls": [
+          {
+            "name": "network_diagnostic",
+            "args": {
+              "target": "dns.northstar.internal",
+              "test_type": "dns"
+            }
+          }
+        ],
+        "actual_text": null,
+        "case_failure_type": "wrong_tool",
+        "observed_mismatch": null,
+        "failure_type": null,
+        "failures": []
+      },
+      "tool_results": [
+        {
+          "tool": "network_diagnostic",
+          "args": {
+            "target": "dns.northstar.internal",
+            "test_type": "dns"
+          },
+          "result": {
+            "tool": "network_diagnostic",
+            "target": "dns.northstar.internal",
+            "target_ip": "10.0.0.2",
+            "test_type": "dns",
+            "status": "healthy",
+            "timestamp": "2026-09-15T17:30:40.495576+00:00",
+            "dns_lookup": {
+              "query": "dns.northstar.internal",
+              "resolved_ip": "10.0.0.2",
+              "authoritative_dns": "10.0.0.2 (dns.northstar.internal)",
+              "dns_status": "NOERROR"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "ND08_multiturn_cancellation",
+      "phase": "B",
+      "suite": "extension",
+      "case_suite": "group",
+      "is_multiturn": true,
+      "metadata": {
+        "skill": "multiturn_diagnostic_cancellation",
+        "difficulty": "hard",
+        "what_it_tests": "Khi người dùng yêu cầu hủy bỏ kiểm tra mạng ở lượt sau thì Agent không được gọi tool."
+      },
+      "input": [
+        {
+          "role": "user",
+          "content": "Chạy kiểm tra toàn diện full diagnostic kết nối tới 8.8.8.8."
+        },
+        {
+          "role": "user",
+          "content": "Đường truyền văn phòng ổn định trở lại rồi, hủy kiểm tra này nhé."
+        },
+        {
+          "role": "user",
+          "content": "Hủy toàn bộ yêu cầu chẩn đoán mạng vừa rồi, không thực hiện hành động nào."
+        }
+      ],
+      "expect": {
+        "no_tool": true,
+        "behavior": "answer_without_tool"
+      },
+      "result": {
+        "passed": true,
+        "routing_correct": true,
+        "args_correct": true,
+        "actual_tool_calls": [],
+        "actual_text": "{\n  \"intent\": \"cancel_network_diagnostic\",\n  \"action\": \"no_action\",\n  \"reply\": \"Yêu cầu chẩn đoán mạng đã được hủy. Không có hành động nào sẽ được thực hiện.\",\n  \"evidence_ids\": []\n}",
+        "case_failure_type": "unnecessary_tool",
+        "observed_mismatch": null,
+        "failure_type": null,
+        "failures": []
+      },
+      "tool_results": []
+    },
+    {
+      "id": "ND09_multiturn_switch_test_type_port",
+      "phase": "B",
+      "suite": "extension",
+      "case_suite": "group",
+      "is_multiturn": true,
+      "metadata": {
+        "skill": "multiturn_switch_test_type",
+        "difficulty": "hard",
+        "what_it_tests": "Chuyển từ kiểm tra ping sang kiểm tra cổng SSH (port 22) trên máy chủ đích."
+      },
+      "input": [
+        {
+          "role": "user",
+          "content": "Ping thử máy chủ backup.northstar.internal."
+        },
+        {
+          "role": "user",
+          "content": "Đổi lại giúp tôi: kiểm tra xem cổng 22 (SSH) trên backup.northstar.internal có mở không thay vì ping."
+        },
+        {
+          "role": "user",
+          "content": "Thực hiện kiểm tra cổng 22 trên backup.northstar.internal."
+        }
+      ],
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "network_diagnostic",
+            "args": {
+              "target": "backup.northstar.internal",
+              "test_type": "port",
+              "port": 22
+            }
+          }
+        ]
+      },
+      "result": {
+        "passed": true,
+        "routing_correct": true,
+        "args_correct": true,
+        "actual_tool_calls": [
+          {
+            "name": "network_diagnostic",
+            "args": {
+              "target": "backup.northstar.internal",
+              "test_type": "port",
+              "port": 22
+            }
+          }
+        ],
+        "actual_text": null,
+        "case_failure_type": "wrong_arg_value",
+        "observed_mismatch": null,
+        "failure_type": null,
+        "failures": []
+      },
+      "tool_results": [
+        {
+          "tool": "network_diagnostic",
+          "args": {
+            "target": "backup.northstar.internal",
+            "test_type": "port",
+            "port": 22
+          },
+          "result": {
+            "tool": "network_diagnostic",
+            "target": "backup.northstar.internal",
+            "target_ip": "10.0.2.50",
+            "test_type": "port",
+            "status": "degraded",
+            "timestamp": "2026-09-15T17:30:47.274184+00:00",
+            "port_check": {
+              "port": 22,
+              "status": "OPEN",
+              "open_ports_detected": [
+                22,
+                873
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "ND10_multiturn_diagnostic_then_confirmed_ticket",
+      "phase": "B",
+      "suite": "extension",
+      "case_suite": "group",
+      "is_multiturn": true,
+      "metadata": {
+        "skill": "diagnostic_then_confirmed_ticket",
+        "difficulty": "hard",
+        "what_it_tests": "Sau khi chẩn đoán mạng phát hiện sự cố, người dùng xác nhận tạo ticket thì agent gọi create_ticket với confirmed=True."
+      },
+      "input": [
+        {
+          "role": "user",
+          "content": "Kiểm tra chẩn đoán mạng cho máy in tầng 4 printer-floor4.northstar.internal."
+        },
+        {
+          "role": "user",
+          "content": "Kết quả mất gói 100% không thể kết nối. Tôi xác nhận tạo ticket: Máy in tầng 4 mất kết nối mạng hoàn toàn, priority high."
+        },
+        {
+          "role": "user",
+          "content": "Tôi đã kiểm tra kỹ và xác nhận tạo ticket này ngay."
+        }
+      ],
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "create_ticket",
+            "args": {
+              "priority": "high",
+              "confirmed": true
+            }
+          }
+        ]
+      },
+      "result": {
+        "passed": false,
+        "routing_correct": false,
+        "args_correct": false,
+        "actual_tool_calls": [
+          {
+            "name": "clarify",
+            "args": {
+              "question": "Bạn có chắc chắn muốn tạo ticket với nội dung: \"Máy in tầng 4 mất kết nối mạng hoàn toàn\" và mức độ ưu tiên là \"high\" không?",
+              "response_type": "yes_no"
+            }
+          }
+        ],
+        "actual_text": null,
+        "case_failure_type": "wrong_boundary",
+        "observed_mismatch": "missing_tool_call",
+        "failure_type": "wrong_boundary",
+        "failures": [
+          "missing tool call create_ticket",
+          "extra tool call clarify"
+        ]
+      },
+      "tool_results": [
+        {
+          "tool": "clarify",
+          "args": {
+            "question": "Bạn có chắc chắn muốn tạo ticket với nội dung: \"Máy in tầng 4 mất kết nối mạng hoàn toàn\" và mức độ ưu tiên là \"high\" không?",
+            "response_type": "yes_no"
+          },
+          "result": {
+            "tool": "clarify",
+            "question": "Bạn có chắc chắn muốn tạo ticket với nội dung: \"Máy in tầng 4 mất kết nối mạng hoàn toàn\" và mức độ ưu tiên là \"high\" không?",
+            "response_type": "yes_no",
+            "options": [],
+            "awaiting_user": true
+          }
+        }
+      ]
+    }
+  ]
+}

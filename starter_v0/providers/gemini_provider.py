@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import time
 from typing import Any
 
@@ -74,7 +75,7 @@ class GeminiProvider:
         self,
         *,
         api_key_env: str = "GEMINI_API_KEY",
-        default_model: str = "gemini-3.5-flash",
+        default_model: str = "gemini-3.5-flash-lite",
     ) -> None:
         self.api_key_env = api_key_env
         self.default_model = default_model
@@ -109,14 +110,14 @@ class GeminiProvider:
         client = genai.Client(api_key=api_key)
         target_model = model or os.getenv("GEMINI_MODEL") or self.default_model
 
-        max_retries = 5
+        max_retries = 6
         base_delay = 2.0
         resp = None
 
         for attempt in range(max_retries):
             try:
                 # Delay nhỏ trước mỗi request để tránh spam rate limit
-                time.sleep(1.5)
+                time.sleep(1.0)
                 resp = client.models.generate_content(
                     model=target_model,
                     contents=contents,
@@ -126,9 +127,16 @@ class GeminiProvider:
             except Exception as exc:
                 err_str = str(exc)
                 if ("429" in err_str or "RESOURCE_EXHAUSTED" in err_str or "quota" in err_str.lower()) and attempt < max_retries - 1:
-                    wait_time = base_delay * (2 ** attempt) + 1.0
-                    print(f"\n[GeminiProvider] Rate limit (429) hit on attempt {attempt+1}/{max_retries}. Sleeping {wait_time:.1f}s before retry...", flush=True)
-                    time.sleep(wait_time)
+                    delay = base_delay * (2 ** attempt) + 1.0
+                    match = re.search(r"retry in (\d+(?:\.\d+)?)s", err_str)
+                    if match:
+                        delay = float(match.group(1)) + 1.0
+                    else:
+                        match_delay = re.search(r"'retryDelay': '(\d+)s'", err_str)
+                        if match_delay:
+                            delay = float(match_delay.group(1)) + 1.0
+                    print(f"\n[GeminiProvider] Rate limit (429) hit on attempt {attempt+1}/{max_retries}. Sleeping {delay:.1f}s before retry...", flush=True)
+                    time.sleep(delay)
                 else:
                     raise exc
 
