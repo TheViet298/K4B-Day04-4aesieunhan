@@ -36,7 +36,7 @@ Sao chép mục này cho từng thành viên. Mỗi thành viên tự viết và
 - Quyết định, khó khăn và cách xử lý: Gặp lỗi 429 Rate Limit khi chạy Gemini, đã xử lý bằng cách thêm cơ chế exponential backoff retry và chuyển qua OpenRouter GPT-4o-mini để đo đạc chuẩn
 - Điều đã học: Hiểu sâu về Tool Calling loop, cách viết System Prompt có ràng buộc ranh giới an toàn
 - AI/công cụ đã dùng và cách kiểm tra: Dùng Antigravity IDE hỗ trợ phân tích log run JSON và viết test
-- Thời điểm đã tự nộp URL repo chung trên VLearn:  
+- Thời điểm đã tự nộp URL repo chung trên VLearn: 16/09/2026
 
 ### Nguyễn Quang Đạo — 2A202602394
 
@@ -53,7 +53,7 @@ Sao chép mục này cho từng thành viên. Mỗi thành viên tự viết và
 - AI/công cụ đã dùng và cách kiểm tra:
   - Sử dụng Antigravity Coding Assistant để hỗ trợ phân tích code, tối ưu YAML schema và rà soát failure trace.
   - Kiểm chứng 100% bằng việc chạy eval thực tế qua script `run_eval.py` và kiểm tra filesystem (`tickets/`).
-- Thời điểm đã tự nộp URL repo chung trên VLearn:
+- Thời điểm đã tự nộp URL repo chung trên VLearn: 16/09/2026
 
 ### Trần Vũ Gia Huy — 2A202602705
 

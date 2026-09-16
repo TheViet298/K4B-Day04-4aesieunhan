@@ -213,5 +213,5 @@ Xem chi tiết tại [TEAM.md](../../TEAM.md).
 - [x] File `version_log.csv` ghi nhận đầy đủ các phiên bản v0, v1, v2, v3.
 - [x] File `data/eval_group.json` có đủ 10 test case nhóm (5 single + 5 multi-turn).
 - [x] Bonus tool `network_diagnostic` có đầy đủ code, schema và dữ liệu kiểm thử.
-- [ ] Chưa commit `.env`, API key hoặc cache.
+- [x] Chưa commit `.env`, API key hoặc cache.
 
